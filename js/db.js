@@ -69,7 +69,7 @@ async function getSession() {
   return data?.session || null;
 }
 
-// --- AUTH — FRESH USER (server-side, not from JWT) ----------
+// --- AUTH ï¿½ FRESH USER (server-side, not from JWT) ----------
 async function getFreshUser() {
   if (!_sb) return null;
   const { data } = await _sb.auth.getUser();
@@ -210,7 +210,7 @@ async function seedDefaultHabits() {
 function subscribeRealtime(callback) {
   if (!_sb || !currentUser) return;
   const uid = currentUser.id;
-  ['habits', 'habit_logs'].forEach(table => {
+  ['habits', 'habit_logs', 'user_data'].forEach(table => {
     const ch = _sb.channel(`ritual-${table}-${uid}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table, filter: `user_id=eq.${uid}` },

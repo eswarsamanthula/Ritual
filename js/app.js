@@ -138,6 +138,9 @@ async function showApp(user) {
     } catch (_) {}
   }
 
+  // Fallback: query accounts directly if snapshot missing
+  if (!state.limitlessSnapshot) await fetchLimitlessFallback();
+
   renderView();
   initNotifications();
   initInstallBanner();
@@ -152,7 +155,11 @@ async function showApp(user) {
       if (typeof loadAllUserData === 'function') {
         try {
           const userData = await loadAllUserData();
-          if (userData.limitless_today_snapshot) state.limitlessSnapshot = userData.limitless_today_snapshot;
+          if (userData.limitless_today_snapshot) {
+            state.limitlessSnapshot = userData.limitless_today_snapshot;
+          } else {
+            await fetchLimitlessFallback();
+          }
           if (userData.limitless_widget_on === false) {
             state.limitlessWidgetOn = false;
           } else if (userData.limitless_widget_on === true) {
@@ -296,6 +303,22 @@ function renderHealthScore(pct) {
     else if (pct < 90)   subEl.textContent = 'Great shape';
     else                 subEl.textContent = 'Excellent';
   }
+}
+
+// ─── LIMITLESS FALLBACK (direct query) ──────────────────────
+async function fetchLimitlessFallback() {
+  if (!_sb || !currentUser) return;
+  try {
+    const { data: accounts } = await _sb.from('accounts').select('id, reset_at').eq('user_id', currentUser.id);
+    if (!accounts || accounts.length === 0) return;
+    const total = accounts.length;
+    const available = accounts.filter(a => !a.reset_at || new Date(a.reset_at) <= new Date()).length;
+    const healthScore = Math.round((available / total) * 100);
+    let streak = 0;
+    const { data: ud } = await _sb.from('user_data').select('value').eq('user_id', currentUser.id).eq('key', 'streak').maybeSingle();
+    if (ud?.value?.streak) streak = ud.value.streak;
+    state.limitlessSnapshot = { healthScore, available, total, streak, updatedAt: new Date().toISOString() };
+  } catch (_) {}
 }
 
 // ─── LIMITLESS WIDGET ───────────────────────────────────────
