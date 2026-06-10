@@ -23,7 +23,9 @@ const state = {
   selectedStackColor: HABIT_PALETTE[0],
   pairs: [],
   restDays: {},   // { [date]: [habit_id, ...] }
-  scoreMode: 'consistency', // 'consistency' | 'perfection' | 'both'
+  scoreMode: 'consistency',
+  todayNotes: {},
+  weekTemplates: {}, // { [habit_id]: [0,1,2,3,4,5,6] }
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -65,6 +67,7 @@ function calcStreak(habitId) {
     const s = dateStr(d);
     if (s === todayStr() && !logs[s]) { d.setDate(d.getDate() - 1); continue; }
     const val = logs[s];
+    if (!isActiveToday(habitId, s)) { streak++; d.setDate(d.getDate() - 1); continue; }
     if (isRestDay(habitId, s)) { streak++; d.setDate(d.getDate() - 1); continue; }
     if (!val || val < habit.target) break;
     streak++;
@@ -86,6 +89,7 @@ function calcMomentumDebt(habitId) {
   while (debt < 30) {
     const s = dateStr(d);
     if (isRestDay(habitId, s)) { d.setDate(d.getDate() - 1); continue; }
+    if (!isActiveToday(habitId, s)) { d.setDate(d.getDate() - 1); continue; }
     const val = logs[s];
     if (val === undefined || val <= 0) { debt++; d.setDate(d.getDate() - 1); }
     else break;
@@ -109,6 +113,46 @@ function calcPerfectionScore() {
   if (total === 0) return 0;
   const done = state.habits.filter(h => isHabitComplete(h)).length;
   return Math.round((done / total) * 100);
+}
+
+// ─── TIME OF DAY ANALYSIS ────────────────────────────────────
+function analyzeTimeOfDay(habitId) {
+  const logs = state.yearLogs.filter(l => l.habit_id === habitId && l.logged_at && l.value > 0);
+  if (logs.length < 30) return null;
+  const buckets = { morning: 0, afternoon: 0, evening: 0, any: 0 };
+  logs.forEach(l => {
+    const h = new Date(l.logged_at).getHours();
+    if (h >= 5 && h < 12) buckets.morning++;
+    else if (h >= 12 && h < 17) buckets.afternoon++;
+    else if (h >= 17 && h < 23) buckets.evening++;
+    else buckets.any++;
+  });
+  const best = Object.entries(buckets).sort((a, b) => b[1] - a[1])[0];
+  return { bucket: best[0], count: best[1], total: logs.length, confidence: Math.round((best[1] / logs.length) * 100) };
+}
+
+// ─── WEEK TEMPLATE ───────────────────────────────────────────
+function isActiveToday(habitId, date) {
+  const d = date ? new Date(date + 'T12:00:00').getDay() : new Date().getDay();
+  const template = state.weekTemplates[habitId];
+  if (!template) return true;
+  return template.includes(d);
+}
+async function saveWeekTemplate() {
+  try { await setUserData('week_templates', state.weekTemplates); } catch (_) {}
+}
+function toggleWeekDay(day) {
+  const habitId = state.editingHabitId;
+  if (!habitId) return;
+  if (!state.weekTemplates[habitId]) state.weekTemplates[habitId] = [0, 1, 2, 3, 4, 5, 6];
+  const idx = state.weekTemplates[habitId].indexOf(day);
+  if (idx > -1) state.weekTemplates[habitId].splice(idx, 1);
+  else state.weekTemplates[habitId].push(day);
+  // Refresh UI
+  document.querySelectorAll('#habit-week-days .weekday-btn').forEach(btn => {
+    const d = parseInt(btn.dataset.day);
+    btn.classList.toggle('active', state.weekTemplates[habitId].includes(d));
+  });
 }
 
 // ─── REST DAYS ────────────────────────────────────────────────
@@ -334,19 +378,24 @@ async function loadAll() {
   [state.habits] = await Promise.all([getHabits()]);
   const todayLogs = await getTodayLogs(todayStr());
   state.todayLogs = {};
-  todayLogs.forEach(l => { state.todayLogs[l.habit_id] = l.value; });
+  state.todayNotes = {};
+  todayLogs.forEach(l => {
+    state.todayLogs[l.habit_id] = l.value;
+    if (l.note) state.todayNotes[l.habit_id] = l.note;
+  });
 
   // Year logs for heatmap + streaks (last 365 days)
   const from = new Date();
   from.setFullYear(from.getFullYear() - 1);
   state.yearLogs = await getLogsRange(dateStr(from), todayStr());
 
-  // Load pairs and rest days from user_data
+  // Load pairs, rest days, week templates from user_data
   if (typeof loadAllUserData === 'function') {
     try {
       const userData = await loadAllUserData();
       loadPairsFromUserData(userData);
       if (userData.rest_days) state.restDays = userData.rest_days;
+      if (userData.week_templates) state.weekTemplates = userData.week_templates;
     } catch (_) {}
   }
 }
@@ -358,7 +407,7 @@ function switchView(view) {
   $(`view-${view}`)?.classList.add('active');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-  const titles = { today: 'Today', history: 'History', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings' };
+  const titles = { today: 'Today', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings' };
   $('view-title').textContent = titles[view] || view;
   renderView();
 }
@@ -366,11 +415,124 @@ function switchView(view) {
 function renderView() {
   if (state.currentView === 'today') renderToday();
   else if (state.currentView === 'history') renderHistory();
+  else if (state.currentView === 'calendar') renderCalendar();
   else if (state.currentView === 'stats') renderStats();
   else if (state.currentView === 'stacks') renderStacksView();
   else if (state.currentView === 'habits') renderHabitsList();
   else if (state.currentView === 'settings') renderSettings();
   updateSyncBadge();
+}
+
+let calendarMonthOffset = 0;
+
+function renderCalendar() {
+  const wrap = $('calendar-wrap');
+  if (!wrap) return;
+  const now = new Date();
+  let year = now.getFullYear();
+  let month = now.getMonth() + calendarMonthOffset;
+  while (month < 0) { month += 12; year--; }
+  while (month > 11) { month -= 12; year++; }
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const todayStrDate = todayStr();
+
+  // No habits
+  if (state.habits.length === 0) {
+    wrap.innerHTML = `<div class="cal-nav">
+      <button class="cal-nav-btn" onclick="navigateCalendar(-1)">←</button>
+      <span class="cal-nav-title">${monthNames[month]} ${year}</span>
+      <button class="cal-nav-btn" onclick="navigateCalendar(1)">→</button>
+    </div>
+    <div class="cal-empty-state">Add some habits to see your calendar</div>`;
+    return;
+  }
+
+  // Build day map from yearLogs
+  const dayMap = {};
+  state.yearLogs.forEach(log => {
+    const h = state.habits.find(x => x.id === log.habit_id);
+    if (!h) return;
+    const complete = h.type === 'checkbox' ? log.value >= 1 : log.value >= h.target;
+    if (!dayMap[log.date]) dayMap[log.date] = { done: 0, total: 0, logs: [] };
+    dayMap[log.date].total++;
+    if (complete) dayMap[log.date].done++;
+    dayMap[log.date].logs.push(log);
+  });
+
+  let html = `<div class="cal-nav">
+    <button class="cal-nav-btn" onclick="navigateCalendar(-1)">←</button>
+    <span class="cal-nav-title">${monthNames[month]} ${year}</span>
+    <button class="cal-nav-btn" onclick="navigateCalendar(1)">→</button>
+  </div>
+  <div class="cal-grid">
+    ${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map(d => `<div class="cal-header">${d}</div>`).join('')}`;
+
+  // Blank cells before first day
+  const firstDay = new Date(year, month, 1).getDay();
+  for (let i = 0; i < firstDay; i++) html += `<div class="cal-cell cal-empty"></div>`;
+
+  // Day cells
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const entry = dayMap[dateStr];
+    const hasData = !!entry;
+    const pct = entry ? Math.round((entry.done / entry.total) * 100) : 0;
+    const level = !hasData ? 0 : pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : 1;
+    const isToday = dateStr === todayStrDate;
+    html += `<div class="cal-cell ${isToday ? 'cal-today' : ''} ${hasData ? 'has-data' : ''} cal-lvl-${level}" onclick="showDayDetail('${dateStr}', this)">
+      <span class="cal-day-num">${d}</span>
+    </div>`;
+  }
+
+  html += '</div><div id="cal-day-detail" class="cal-day-detail"></div>';
+
+  wrap.innerHTML = html;
+}
+
+function navigateCalendar(dir) {
+  calendarMonthOffset += dir;
+  renderCalendar();
+}
+
+function showDayDetail(dateStr, el) {
+  const panel = $('cal-day-detail');
+  if (!panel) return;
+  const existing = panel.dataset.date;
+  if (existing === dateStr) { panel.innerHTML = ''; panel.dataset.date = ''; return; }
+  panel.dataset.date = dateStr;
+  const logs = state.yearLogs.filter(l => l.date === dateStr);
+  const todayHabits = state.habits.filter(h =>
+    state.todayLogs[h.id] !== undefined && dateStr === todayStr()
+  );
+  const allLogs = dateStr === todayStr()
+    ? todayHabits.map(h => ({ habit_id: h.id, value: state.todayLogs[h.id], note: state.todayNotes[h.id] || null, logged_at: null })).concat(logs.filter(l => !todayHabits.find(h => h.id === l.habit_id)))
+    : logs;
+  const unique = [];
+  const seen = new Set();
+  allLogs.forEach(l => {
+    if (!seen.has(l.habit_id)) { seen.add(l.habit_id); unique.push(l); }
+  });
+  if (unique.length === 0) {
+    panel.innerHTML = '<div class="cal-detail-empty">Nothing logged this day</div>';
+    return;
+  }
+  panel.innerHTML = unique.map(l => {
+    const h = state.habits.find(x => x.id === l.habit_id);
+    if (!h) return '';
+    const val = l.value || 0;
+    const complete = h.type === 'checkbox' ? val >= 1 : val >= h.target;
+    const time = l.logged_at ? new Date(l.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    return `<div class="cal-detail-row" style="border-left:3px solid ${h.color}">
+      <span class="cal-detail-icon">${h.icon}</span>
+      <div class="cal-detail-body">
+        <span class="cal-detail-name">${escHtml(h.name)}</span>
+        <span class="cal-detail-val">${complete ? '✓' : (h.type === 'checkbox' ? '✕' : val + '/' + h.target)}</span>
+        ${time ? `<span class="cal-detail-time">${time}</span>` : ''}
+        ${l.note ? `<span class="cal-detail-note">${escHtml(l.note)}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ─── TODAY VIEW ──────────────────────────────────────────────
@@ -413,6 +575,8 @@ function renderToday() {
 
   // Habit suggestion
   renderHabitSuggestion();
+  // Streak risk alert
+  renderStreakRiskBanner();
   // Next up card
   renderNextUp();
   // Stacks today widget
@@ -421,9 +585,9 @@ function renderToday() {
   // Streak sidebar badge
   renderStreakBadge();
 
-  // Group by time_of_day
+  // Group by time_of_day (only active today)
   const groups = { morning: [], afternoon: [], evening: [], any: [] };
-  state.habits.forEach(h => groups[h.time_of_day]?.push(h));
+  state.habits.filter(h => isActiveToday(h.id)).forEach(h => groups[h.time_of_day]?.push(h));
 
   const grid = $('habits-grid');
   if (!grid) return;
@@ -453,6 +617,7 @@ function renderToday() {
 }
 
 function isHabitComplete(h) {
+  if (!isActiveToday(h.id)) return true;
   if (isRestDay(h.id)) return true;
   const val = state.todayLogs[h.id] || 0;
   return h.type === 'checkbox' ? val >= 1 : val >= h.target;
@@ -632,6 +797,45 @@ function renderHabitSuggestion() {
   if (dismissBtn) {
     dismissBtn.onclick = (e) => { e.stopPropagation(); el.classList.add('hidden'); clearTimeout(el._dismissTimer); };
   }
+}
+
+function renderStreakRiskBanner() {
+  const el = $('streak-risk-banner');
+  if (!el) return;
+  const hour = new Date().getHours();
+  if (hour < 21) { el.classList.add('hidden'); return; }
+
+  // Load per-day dismissals from localStorage
+  const dismissedKey = 'streak_risk_dismissed';
+  const todayDismissed = (() => {
+    try { const d = JSON.parse(localStorage.getItem(dismissedKey)); return d?.[todayStr()] || []; } catch { return []; }
+  })();
+
+  const atRisk = state.habits.filter(h => !isHabitComplete(h) && calcStreak(h.id) >= 7 && !todayDismissed.includes(h.id));
+  if (atRisk.length === 0) { el.classList.add('hidden'); return; }
+  el.classList.remove('hidden');
+  el.innerHTML = atRisk.map(h => {
+    const streak = calcStreak(h.id);
+    return `
+    <div class="streak-risk-item" style="border-left:3px solid ${h.color}">
+      <div class="streak-risk-header">
+        <span class="streak-risk-icon">⚠️</span>
+        <span class="streak-risk-title">${escHtml(h.name)} — ${streak}d streak at risk</span>
+        <button class="streak-risk-dismiss" onclick="dismissStreakRisk('${h.id}')">✕</button>
+      </div>
+      <div class="streak-risk-body">Log before midnight to keep your streak.</div>
+    </div>`;
+  }).join('');
+}
+
+function dismissStreakRisk(habitId) {
+  const key = 'streak_risk_dismissed';
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem(key)) || {}; } catch {}
+  if (!data[todayStr()]) data[todayStr()] = [];
+  if (!data[todayStr()].includes(habitId)) data[todayStr()].push(habitId);
+  localStorage.setItem(key, JSON.stringify(data));
+  renderStreakRiskBanner();
 }
 
 // ─── NEXT UP CARD ───────────────────────────────────────────
@@ -858,6 +1062,10 @@ function buildHabitCard(h) {
   if (streak > 0) badges.push(`<span class="streak-chip" style="color:${h.color}">◉ ${streak}d</span>`);
   if (debt > 0) badges.push(`<span class="debt-chip" style="color:var(--accent-warm)">−${debt}d</span>`);
   if (isTrigger) badges.push(`<span class="pair-badge">↗</span>`);
+  const timeAnalysis = analyzeTimeOfDay(h.id);
+  if (timeAnalysis && timeAnalysis.bucket !== h.time_of_day && timeAnalysis.confidence >= 60) {
+    badges.push(`<span class="time-suggest-chip" onclick="handleTimeSuggestion('${h.id}','${timeAnalysis.bucket}')" title="Tap to update">🌅 ${timeAnalysis.bucket}</span>`);
+  }
 
   return `<div class="habit-card ${complete ? 'complete' : ''} ${isRest ? 'rest-mode' : ''}" style="--hc:${h.color}">
     <div class="habit-card-left">
@@ -930,18 +1138,23 @@ function openLogModal(habitId) {
   $('log-modal-unit').textContent = habit.unit;
   $('log-time-input').value = state.todayLogs[habitId] || '';
   $('log-time-input').style.setProperty('--hc', habit.color);
+  const noteEl = $('log-note-input');
+  if (noteEl) noteEl.value = state.todayNotes[habitId] || '';
   openModal('modal-log');
 }
 
 async function saveLog() {
   const val = parseFloat($('log-time-input').value);
   if (isNaN(val) || val < 0) { showToast('Enter a valid number'); return; }
+  const note = ($('log-note-input')?.value || '').trim() || null;
   if (val === 0) {
     await deleteLog(state.logModalHabitId, todayStr());
     delete state.todayLogs[state.logModalHabitId];
+    delete state.todayNotes[state.logModalHabitId];
   } else {
-    await upsertLog(state.logModalHabitId, todayStr(), val, null);
+    await upsertLog(state.logModalHabitId, todayStr(), val, note);
     state.todayLogs[state.logModalHabitId] = val;
+    if (note) state.todayNotes[state.logModalHabitId] = note;
   }
   closeModal('modal-log');
   await loadAll();
@@ -1417,6 +1630,12 @@ function openHabitModal(habitId) {
   state.selectedColor = h?.color || HABIT_PALETTE[0];
   $$('.color-dot').forEach(d => d.classList.toggle('selected', d.dataset.color === state.selectedColor));
 
+  // Week days
+  const days = h ? (state.weekTemplates[h.id] || [0,1,2,3,4,5,6]) : [0,1,2,3,4,5,6];
+  document.querySelectorAll('#habit-week-days .weekday-btn').forEach(btn => {
+    btn.classList.toggle('active', days.includes(parseInt(btn.dataset.day)));
+  });
+
   openModal('modal-habit');
   const pairBtn = $('habit-pair-btn');
   if (pairBtn) pairBtn.style.display = h ? '' : 'none';
@@ -1444,7 +1663,16 @@ async function saveHabitForm() {
   };
 
   try {
-    await saveHabit(habit);
+    const saved = await saveHabit(habit);
+    // Save week template
+    const activeDays = [];
+    document.querySelectorAll('#habit-week-days .weekday-btn.active').forEach(btn => activeDays.push(parseInt(btn.dataset.day)));
+    const hid = saved?.id || state.editingHabitId;
+    if (hid) {
+      if (activeDays.length < 7) state.weekTemplates[hid] = activeDays;
+      else delete state.weekTemplates[hid];
+      await saveWeekTemplate();
+    }
     closeModal('modal-habit');
     await loadAll();
     renderView();
@@ -1864,6 +2092,19 @@ function bindEvents() {
   });
   // Pair modal
   bindPairModal();
+  // Week day toggles
+  document.querySelectorAll('#habit-week-days .weekday-btn').forEach(btn => {
+    btn.addEventListener('click', () => toggleWeekDay(parseInt(btn.dataset.day)));
+  });
+}
+
+async function handleTimeSuggestion(habitId, newTime) {
+  try {
+    await updateHabitTime(habitId, newTime);
+    await loadAll();
+    renderView();
+    showToast('Time updated to ' + newTime);
+  } catch(e) { showToast('Failed to update time'); }
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -115,6 +115,9 @@
       <button class="nav-item" data-view="history">
         <span class="nav-icon">◑</span> History
       </button>
+      <button class="nav-item" data-view="calendar">
+        <span class="nav-icon">📅</span> Calendar
+      </button>
       <button class="nav-item" data-view="stats">
         <span class="nav-icon">◧</span> Stats
       </button>
@@ -203,6 +206,7 @@
       </div>
       <div id="limitless-widget" class="limitless-widget-wrap"></div>
       <div id="habit-suggest" class="smart-suggest hidden"></div>
+      <div id="streak-risk-banner" class="streak-risk-banner hidden"></div>
       <div id="next-up-card" class="next-up-card"></div>
       <div id="stacks-today-widget" class="stacks-today-widget"></div>
       <div id="habits-grid"></div>
@@ -230,6 +234,11 @@
         <div class="skip-reasons-sub" id="skip-reasons-sub">Track skip reasons when logging 0 for a habit</div>
         <div id="skip-reasons-bars"></div>
       </div>
+    </div>
+
+    <!-- CALENDAR -->
+    <div id="view-calendar" class="view">
+      <div id="calendar-wrap"></div>
     </div>
 
     <!-- STATS -->
@@ -504,6 +513,18 @@
         </select>
       </div>
       <div class="field-group">
+        <label>Active Days</label>
+        <div class="weekday-toggle" id="habit-week-days">
+          <button class="weekday-btn active" data-day="0">S</button>
+          <button class="weekday-btn active" data-day="1">M</button>
+          <button class="weekday-btn active" data-day="2">T</button>
+          <button class="weekday-btn active" data-day="3">W</button>
+          <button class="weekday-btn active" data-day="4">T</button>
+          <button class="weekday-btn active" data-day="5">F</button>
+          <button class="weekday-btn active" data-day="6">S</button>
+        </div>
+      </div>
+      <div class="field-group">
         <label>Color</label>
         <div class="color-row" id="color-picker">
           <div class="color-dot selected" data-color="#7fb685" style="background:#7fb685"></div>
@@ -583,6 +604,10 @@
           <button class="quick-amount" data-add="45">+45</button>
           <button class="quick-amount" data-add="60">+60</button>
         </div>
+      </div>
+      <div class="field-group">
+        <label>Note (optional)</label>
+        <textarea id="log-note-input" class="log-note-input" placeholder="How did it go?..." rows="2"></textarea>
       </div>
     </div>
     <div class="modal-footer">

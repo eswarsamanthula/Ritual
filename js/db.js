@@ -126,10 +126,14 @@ async function saveHabit(habit) {
       .eq('id', habit.id)
       .eq('user_id', currentUser.id);
     if (error) throw error;
+    return { id: habit.id };
   } else {
-    const { error } = await _sb.from('habits')
-      .insert({ ...payload, user_id: currentUser.id });
+    const { data, error } = await _sb.from('habits')
+      .insert({ ...payload, user_id: currentUser.id })
+      .select('id')
+      .single();
     if (error) throw error;
+    return data;
   }
 }
 
@@ -137,6 +141,15 @@ async function deleteHabit(id) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
   const { error } = await _sb.from('habits')
     .delete()
+    .eq('id', id)
+    .eq('user_id', currentUser.id);
+  if (error) throw error;
+}
+
+async function updateHabitTime(id, timeOfDay) {
+  if (!_sb || !currentUser) throw new Error('Not authenticated');
+  const { error } = await _sb.from('habits')
+    .update({ time_of_day: timeOfDay })
     .eq('id', id)
     .eq('user_id', currentUser.id);
   if (error) throw error;
