@@ -142,16 +142,14 @@ async function saveWeekTemplate() {
   try { await setUserData('week_templates', state.weekTemplates); } catch (_) {}
 }
 function toggleWeekDay(day) {
-  const habitId = state.editingHabitId;
-  if (!habitId) return;
-  if (!state.weekTemplates[habitId]) state.weekTemplates[habitId] = [0, 1, 2, 3, 4, 5, 6];
-  const idx = state.weekTemplates[habitId].indexOf(day);
-  if (idx > -1) state.weekTemplates[habitId].splice(idx, 1);
-  else state.weekTemplates[habitId].push(day);
-  // Refresh UI
+  const key = state.editingHabitId || '__new';
+  if (!state.weekTemplates[key]) state.weekTemplates[key] = [0, 1, 2, 3, 4, 5, 6];
+  const idx = state.weekTemplates[key].indexOf(day);
+  if (idx > -1) state.weekTemplates[key].splice(idx, 1);
+  else state.weekTemplates[key].push(day);
   document.querySelectorAll('#habit-week-days .weekday-btn').forEach(btn => {
     const d = parseInt(btn.dataset.day);
-    btn.classList.toggle('active', state.weekTemplates[habitId].includes(d));
+    btn.classList.toggle('active', state.weekTemplates[key].includes(d));
   });
 }
 
@@ -1680,6 +1678,7 @@ async function saveHabitForm() {
     if (hid) {
       if (activeDays.length < 7) state.weekTemplates[hid] = activeDays;
       else delete state.weekTemplates[hid];
+      delete state.weekTemplates['__new'];
       await saveWeekTemplate();
     }
     closeModal('modal-habit');
