@@ -879,7 +879,7 @@ function buildHabitCard(h) {
       </div>
       ${controls}
       <div class="habit-card-actions">
-        <button class="habit-card-menu-btn" onclick="toggleRestDay('${h.id}')" title="${isRest ? 'Unmark rest day' : 'Mark rest day'}">⋯</button>
+        <button class="habit-card-menu-btn" onclick="toggleRestDay('${h.id}')" title="${isRest ? 'Unmark rest day' : 'Mark rest day'}">⛱</button>
       </div>
     </div>
   </div>`;

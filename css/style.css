@@ -1467,8 +1467,7 @@ body::after {
 
 /* ─── HABIT CARD ACTIONS ─────────────────────────────────── */
 .habit-card-actions { position: absolute; top: 0.25rem; right: 0.25rem; display: flex; gap: 0.15rem; }
-.habit-card-menu-btn { background: none; border: none; color: var(--text-faint); font-size: 0.7rem; cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: var(--transition); opacity: 0; }
-.habit-card:hover .habit-card-menu-btn { opacity: 0.5; }
+.habit-card-menu-btn { background: none; border: none; color: var(--text-faint); font-size: 0.7rem; cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: var(--transition); opacity: 0.5; }
 .habit-card-menu-btn:hover { opacity: 1 !important; background: var(--bg-subtle); }
 
 /* ─── PAIR MODAL ─────────────────────────────────────────── */
