@@ -21,6 +21,9 @@ const state = {
   editingStackId: null,
   selectedStackIcon: '☀',
   selectedStackColor: HABIT_PALETTE[0],
+  pairs: [],
+  restDays: {},   // { [date]: [habit_id, ...] }
+  scoreMode: 'consistency', // 'consistency' | 'perfection' | 'both'
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -50,7 +53,6 @@ function formatDate(d) {
 
 // ─── STREAK CALCULATION ──────────────────────────────────────
 function calcStreak(habitId) {
-  // Count consecutive days ending today where log exists and value >= target
   const habit = state.habits.find(h => h.id === habitId);
   if (!habit) return 0;
   const logs = state.yearLogs
@@ -59,16 +61,156 @@ function calcStreak(habitId) {
 
   let streak = 0;
   const d = new Date();
-  // Allow today to not be logged yet (don't break streak)
   while (true) {
     const s = dateStr(d);
     if (s === todayStr() && !logs[s]) { d.setDate(d.getDate() - 1); continue; }
     const val = logs[s];
+    if (isRestDay(habitId, s)) { streak++; d.setDate(d.getDate() - 1); continue; }
     if (!val || val < habit.target) break;
     streak++;
     d.setDate(d.getDate() - 1);
   }
   return streak;
+}
+
+function calcMomentumDebt(habitId) {
+  const habit = state.habits.find(h => h.id === habitId);
+  if (!habit) return 0;
+  const logs = state.yearLogs
+    .filter(l => l.habit_id === habitId)
+    .reduce((m, l) => { m[l.date] = l.value; return m; }, {});
+  let debt = 0;
+  const d = new Date();
+  const tVal = logs[todayStr()];
+  if (tVal && tVal > 0) d.setDate(d.getDate() - 1);
+  while (debt < 30) {
+    const s = dateStr(d);
+    if (isRestDay(habitId, s)) { d.setDate(d.getDate() - 1); continue; }
+    const val = logs[s];
+    if (val === undefined || val <= 0) { debt++; d.setDate(d.getDate() - 1); }
+    else break;
+  }
+  return debt;
+}
+
+function calcConsistencyScore() {
+  const total = state.habits.length;
+  if (total === 0) return 0;
+  let sum = 0;
+  state.habits.forEach(h => {
+    const val = state.todayLogs[h.id] || 0;
+    sum += Math.min(1, val / h.target);
+  });
+  return Math.round((sum / total) * 100);
+}
+
+function calcPerfectionScore() {
+  const total = state.habits.length;
+  if (total === 0) return 0;
+  const done = state.habits.filter(h => isHabitComplete(h)).length;
+  return Math.round((done / total) * 100);
+}
+
+// ─── REST DAYS ────────────────────────────────────────────────
+function isRestDay(habitId, date) {
+  const d = date || todayStr();
+  return state.restDays[d]?.includes(habitId) || false;
+}
+async function toggleRestDay(habitId) {
+  const d = todayStr();
+  if (!state.restDays[d]) state.restDays[d] = [];
+  const idx = state.restDays[d].indexOf(habitId);
+  if (idx > -1) state.restDays[d].splice(idx, 1);
+  else state.restDays[d].push(habitId);
+  if (state.restDays[d].length === 0) delete state.restDays[d];
+  try { await setUserData('rest_days', state.restDays); } catch (_) {}
+  renderToday();
+}
+
+// ─── HABIT PAIRS ──────────────────────────────────────────────
+function loadPairsFromUserData(data) {
+  state.pairs = data.habit_pairs || [];
+}
+async function savePairs() {
+  try { await setUserData('habit_pairs', state.pairs); } catch (_) {}
+}
+function isPairedTrigger(habitId) {
+  return state.pairs.some(p => p.trigger_habit_id === habitId && p.enabled !== false);
+}
+function getPairedActions(triggerHabitId) {
+  return state.pairs.filter(p => p.trigger_habit_id === triggerHabitId && p.enabled !== false);
+}
+async function triggerPairs(triggerHabitId) {
+  const actions = getPairedActions(triggerHabitId);
+  for (const pair of actions) {
+    const target = state.habits.find(h => h.id === pair.triggered_habit_id);
+    if (!target) continue;
+    if (pair.action === 'auto_complete' && !isHabitComplete(target)) {
+      await upsertLog(target.id, todayStr(), target.type === 'checkbox' ? 1 : target.target, null);
+      state.todayLogs[target.id] = target.type === 'checkbox' ? 1 : target.target;
+    } else if (pair.action === 'open_log') {
+      openLogModal(target.id);
+    }
+  }
+}
+
+let _pairingTriggerId = null;
+function openPairModal() {
+  _pairingTriggerId = state.editingHabitId;
+  const targetSel = $('pair-target-select');
+  if (targetSel) {
+    const others = state.habits.filter(h => h.id !== _pairingTriggerId);
+    targetSel.innerHTML = others.map(h => `<option value="${h.id}">${h.icon} ${h.name}</option>`).join('');
+  }
+  const selAction = document.querySelector('[data-pair-action].selected');
+  if (selAction) selAction.classList.remove('selected');
+  document.querySelector('[data-pair-action="open_log"]')?.classList.add('selected');
+  renderPairList();
+  openModal('modal-pair');
+}
+function renderPairList() {
+  const list = $('pair-list');
+  if (!list) return;
+  const pairs = state.pairs.filter(p => p.trigger_habit_id === _pairingTriggerId);
+  if (pairs.length === 0) {
+    list.innerHTML = '<span style="font-size:0.72rem;color:var(--text-faint)">No linked habits yet</span>';
+    return;
+  }
+  list.innerHTML = pairs.map(p => {
+    const t = state.habits.find(h => h.id === p.triggered_habit_id);
+    return `<div class="pair-row">
+      <span>${t ? t.icon + ' ' + t.name : 'Unknown'} → ${p.action === 'auto_complete' ? 'auto' : 'open'}</span>
+      <button class="pair-remove" onclick="removePair('${p.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+function removePair(id) {
+  state.pairs = state.pairs.filter(p => p.id !== id);
+  savePairs();
+  renderPairList();
+}
+function addPair() {
+  const targetId = $('pair-target-select')?.value;
+  if (!targetId) return;
+  const actionEl = document.querySelector('[data-pair-action].selected');
+  const action = actionEl?.dataset?.pairAction || 'open_log';
+  if (state.pairs.some(p => p.trigger_habit_id === _pairingTriggerId && p.triggered_habit_id === targetId)) {
+    showToast('Already linked');
+    return;
+  }
+  state.pairs.push({ id: Date.now().toString(), trigger_habit_id: _pairingTriggerId, triggered_habit_id: targetId, action, enabled: true });
+  savePairs();
+  renderPairList();
+}
+
+function bindPairModal() {
+  document.querySelectorAll('[data-pair-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-pair-action]').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+  $('pair-target-select')?.addEventListener('change', () => {});
 }
 
 // ─── INIT ────────────────────────────────────────────────────
@@ -198,6 +340,15 @@ async function loadAll() {
   const from = new Date();
   from.setFullYear(from.getFullYear() - 1);
   state.yearLogs = await getLogsRange(dateStr(from), todayStr());
+
+  // Load pairs and rest days from user_data
+  if (typeof loadAllUserData === 'function') {
+    try {
+      const userData = await loadAllUserData();
+      loadPairsFromUserData(userData);
+      if (userData.rest_days) state.restDays = userData.rest_days;
+    } catch (_) {}
+  }
 }
 
 // ─── VIEW ROUTING ────────────────────────────────────────────
@@ -239,11 +390,28 @@ function renderToday() {
   $('score-label') && ($('score-label').textContent = scoreLabel(pct));
   $('score-sub') && ($('score-sub').textContent = `${done} of ${total} habits done`);
 
+  // Score mode toggle
+  const modeEl = $('score-mode-toggle');
+  if (modeEl) {
+    const modes = ['consistency', 'perfection', 'both'];
+    const ms = ['Consistency', 'Perfection', 'Both'];
+    modeEl.innerHTML = modes.map((m, i) =>
+      `<button class="score-mode-btn ${state.scoreMode === m ? 'active' : ''}" onclick="toggleScoreMode('${m}')">${ms[i]}</button>`
+    ).join('');
+  }
+  const cons = calcConsistencyScore();
+  const perf = calcPerfectionScore();
+  const scoreVal = state.scoreMode === 'consistency' ? cons + '%' : state.scoreMode === 'perfection' ? perf + '%' : cons + '% · ' + perf + '%';
+  $('score-mode-val') && ($('score-mode-val').textContent = scoreVal);
+
   // Health score widget
   renderHealthScore(pct);
 
   // Limitless widget
   renderLimitlessWidget();
+
+  // Limitless sync message
+  renderLimitlessSyncMessage();
 
   // Habit suggestion
   renderHabitSuggestion();
@@ -287,6 +455,7 @@ function renderToday() {
 }
 
 function isHabitComplete(h) {
+  if (isRestDay(h.id)) return true;
   const val = state.todayLogs[h.id] || 0;
   return h.type === 'checkbox' ? val >= 1 : val >= h.target;
 }
@@ -399,6 +568,28 @@ function renderLimitlessWidget() {
         </div>
       </div>
     </div>`;
+}
+
+function toggleScoreMode(mode) {
+  state.scoreMode = mode;
+  renderToday();
+}
+
+function renderLimitlessSyncMessage() {
+  const el = $('limitless-sync-message');
+  if (!el) return;
+  const snap = state.limitlessSnapshot;
+  if (!snap || !snap.total) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  const hs = snap.healthScore;
+  // Pick a compatible habit
+  const compat = state.habits.find(h => !isHabitComplete(h) && /[🤖💻📝📊🎨📖✍📷🎵]/i.test(h.icon)) || state.habits.find(h => !isHabitComplete(h));
+  const hName = compat ? compat.name : 'your habits';
+  let msg, mood;
+  if (hs >= 80) { msg = `All AI accounts ready — great time for ${hName}`; mood = 'high'; }
+  else if (hs >= 50) { msg = `${hs}% accounts available — try ${hName} now`; mood = 'mid'; }
+  else { msg = `Some accounts resetting — good for offline ${hName}`; mood = 'low'; }
+  el.innerHTML = `<div class="sync-score sync-${mood}"><span class="sync-icon">◉</span> ${msg}</div>`;
 }
 
 // ─── STREAK SIDEBAR BADGE ────────────────────────────────────
@@ -658,6 +849,9 @@ function buildHabitCard(h) {
   const complete = isHabitComplete(h);
   const pct = h.type === 'checkbox' ? (complete ? 100 : 0) : Math.min(100, (val / h.target) * 100);
   const streak = calcStreak(h.id);
+  const debt = calcMomentumDebt(h.id);
+  const isRest = isRestDay(h.id);
+  const isTrigger = isPairedTrigger(h.id);
   const circ = 2 * Math.PI * 22;
   const offset = circ * (1 - pct / 100);
 
@@ -678,7 +872,13 @@ function buildHabitCard(h) {
     </button>`;
   }
 
-  return `<div class="habit-card ${complete ? 'complete' : ''}" style="--hc:${h.color}">
+  const badges = [];
+  if (isRest) badges.push(`<span class="rest-badge">⛱ Rest</span>`);
+  if (streak > 0) badges.push(`<span class="streak-chip" style="color:${h.color}">◉ ${streak}d</span>`);
+  if (debt > 1) badges.push(`<span class="debt-chip" style="color:var(--accent-warm)">−${debt}d</span>`);
+  if (isTrigger) badges.push(`<span class="pair-badge">↗</span>`);
+
+  return `<div class="habit-card ${complete ? 'complete' : ''} ${isRest ? 'rest-mode' : ''}" style="--hc:${h.color}">
     <div class="habit-card-left">
       <div class="habit-ring-wrap">
         <svg width="52" height="52" viewBox="0 0 52 52">
@@ -693,10 +893,13 @@ function buildHabitCard(h) {
     </div>
     <div class="habit-card-body">
       <div class="habit-name">${escHtml(h.name)}</div>
-      <div class="habit-meta">${streak > 0 ? `<span class="streak-chip" style="color:${h.color}">◉ ${streak}d</span>` : ''}
+      <div class="habit-meta">${badges.join('')}
         ${h.type !== 'checkbox' ? `<span class="target-chip">${h.target} ${h.unit}</span>` : ''}
       </div>
       ${controls}
+      <div class="habit-card-actions">
+        <button class="habit-card-menu-btn" onclick="toggleRestDay('${h.id}')" title="${isRest ? 'Unmark rest day' : 'Mark rest day'}">☰</button>
+      </div>
     </div>
   </div>`;
 }
@@ -718,6 +921,7 @@ async function toggleCheckbox(habitId) {
   }
   renderToday();
   writeRitualSnapshot();
+  triggerPairs(habitId);
 }
 
 async function adjustCount(habitId, delta) {
@@ -734,6 +938,7 @@ async function adjustCount(habitId, delta) {
   }
   renderToday();
   writeRitualSnapshot();
+  triggerPairs(habitId);
 }
 
 function openLogModal(habitId) {
@@ -760,6 +965,7 @@ async function saveLog() {
   closeModal('modal-log');
   await loadAll();
   await writeRitualSnapshot();
+  triggerPairs(state.logModalHabitId);
   renderView();
 }
 
@@ -769,11 +975,12 @@ async function writeRitualSnapshot() {
   if (total === 0) return;
   const done = state.habits.filter(h => isHabitComplete(h)).length;
   const pct = Math.round((done / total) * 100);
+  const consistency = calcConsistencyScore();
   let bestStreak = 0;
   state.habits.forEach(h => { const s = calcStreak(h.id); if (s > bestStreak) bestStreak = s; });
   try {
     await setUserData('ritual_today_snapshot', {
-      pct, done, total, streak: bestStreak,
+      pct, done, total, consistency, streak: bestStreak,
       updatedAt: new Date().toISOString()
     });
   } catch (e) { /* silent */ }
@@ -1230,6 +1437,8 @@ function openHabitModal(habitId) {
   $$('.color-dot').forEach(d => d.classList.toggle('selected', d.dataset.color === state.selectedColor));
 
   openModal('modal-habit');
+  const pairBtn = $('habit-pair-btn');
+  if (pairBtn) pairBtn.style.display = h ? '' : 'none';
 }
 
 function updateTypeFields() {
@@ -1672,6 +1881,8 @@ function bindEvents() {
     hideInstallBanner();
     localStorage.setItem('ritual_pwa_dismissed', '1');
   });
+  // Pair modal
+  bindPairModal();
 }
 
 document.addEventListener('DOMContentLoaded', init);

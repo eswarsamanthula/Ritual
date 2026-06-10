@@ -177,6 +177,10 @@
           <div class="score-pct-display" id="score-pct">0%</div>
           <div class="score-headline" id="score-label">Start your day</div>
           <div class="score-sub-text" id="score-sub">0 of 0 habits done</div>
+          <div class="score-mode-row">
+            <div class="score-mode-toggle" id="score-mode-toggle"></div>
+            <span class="score-mode-val" id="score-mode-val">0%</span>
+          </div>
         </div>
         <div class="health-score-widget" id="health-score-widget">
           <div class="health-ring-wrap">
@@ -198,6 +202,7 @@
         </div>
       </div>
       <div id="limitless-widget" class="limitless-widget-wrap"></div>
+      <div id="limitless-sync-message"></div>
       <div id="habit-suggest" class="smart-suggest hidden"></div>
       <div id="next-up-card" class="next-up-card"></div>
       <div id="stacks-today-widget" class="stacks-today-widget"></div>
@@ -515,7 +520,44 @@
     </div>
     <div class="modal-footer">
       <button class="btn-ghost" data-modal="modal-habit">Cancel</button>
-      <button class="btn-primary modal-save" id="save-habit-btn">Save Habit</button>
+      <div class="modal-footer-right">
+        <button class="btn-link small" id="habit-pair-btn" onclick="openPairModal()" style="display:none">Link habits ↗</button>
+        <button class="btn-primary modal-save" id="save-habit-btn">Save Habit</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PAIR MODAL ═══════════════════════════════════════════ -->
+<div id="modal-pair" class="modal-backdrop">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="pair-modal-title">Link Habit</h3>
+      <button class="modal-close" data-modal="modal-pair">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>When this habit is done...</label>
+      </div>
+      <div class="field-group">
+        <label>Trigger this habit</label>
+        <select id="pair-target-select"></select>
+      </div>
+      <div class="field-group">
+        <label>Action</label>
+        <div class="type-toggle" id="pair-action-toggle">
+          <button class="type-btn selected" data-pair-action="open_log">Open log</button>
+          <button class="type-btn" data-pair-action="auto_complete">Auto complete</button>
+        </div>
+        <button class="btn-primary" style="margin-top:0.5rem;width:100%" onclick="addPair()">+ Add Link</button>
+      </div>
+      <div class="field-group" id="pair-list-group">
+        <label>Current pairs</label>
+        <div id="pair-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-modal="modal-pair">Done</button>
     </div>
   </div>
 </div>
