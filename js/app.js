@@ -556,71 +556,47 @@ function renderHistory() {
     return;
   }
 
-  // Determine date range: full year + pad to nearest Sunday
-  const jan1 = new Date(targetYear, 0, 1);
-  const dec31 = new Date(targetYear, 11, 31);
-  const start = new Date(jan1);
-  start.setDate(start.getDate() - start.getDay()); // pad to previous Sunday
+  // Date range: Jan 1 → Dec 31 (no padding, matches Limitless layout)
+  const startDate = new Date(targetYear, 0, 1);
+  const endDate = new Date(targetYear, 11, 31);
 
-  const end = new Date(dec31);
-  // Pad end to a Saturday (end after last day of year)
-  const tempEnd = new Date(end);
-  tempEnd.setDate(tempEnd.getDate() + (6 - tempEnd.getDay()));
-  const totalDays = Math.round((tempEnd - start) / (1000 * 60 * 60 * 24)) + 1;
-  const numWeeks = Math.ceil(totalDays / 7);
-
-  // Set dynamic column count
-  wrap.style.setProperty('--hm-cols', numWeeks);
-
-  // Month labels
-  const months = [];
-  let currentMonth = -1;
-  const tmp = new Date(start);
-  for (let w = 0; w < numWeeks; w++) {
-    const m = tmp.getMonth();
-    if (m !== currentMonth) {
-      months.push({ idx: w, label: tmp.toLocaleString('default', { month: 'short' }) });
-      currentMonth = m;
-    }
-    tmp.setDate(tmp.getDate() + 7);
+  // Collect all dates in the year
+  const dates = [];
+  for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+    dates.push(new Date(d));
   }
 
-  let html = '<div class="heatmap-grid">';
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Month row
-  html += '<div class="heatmap-months">';
-  months.forEach(m => {
-    html += `<span class="heatmap-month" style="grid-column:${m.idx + 1}">${m.label}</span>`;
+  let html = '<div class="heatmap-content">';
+
+  // Month labels
+  html += '<div class="heatmap-month-labels">';
+  let currentMonth = -1;
+  dates.forEach(d => {
+    if (d.getMonth() !== currentMonth) {
+      currentMonth = d.getMonth();
+      html += `<span class="heatmap-month-label">${MONTHS[currentMonth]}</span>`;
+    }
   });
   html += '</div>';
 
-  // Day labels
-  html += '<div class="heatmap-days"><span>Mo</span><span></span><span>We</span><span></span><span>Fr</span><span></span><span>Su</span></div>';
-
-  // Cells
-  html += '<div class="heatmap-cells">';
-  const d = new Date(start);
-  for (let w = 0; w < numWeeks; w++) {
-    html += '<div class="heatmap-col">';
-    for (let day = 0; day < 7; day++) {
-      const s = dateStr(d);
-      const isOutOfYear = d < jan1 || d > dec31;
-      const entry = dayMap[s];
-      let level = 0;
-      if (entry && !isOutOfYear) {
-        const frac = entry.done / Math.max(entry.total, 1);
-        if (frac >= 0.25) level = 1;
-        if (frac >= 0.5)  level = 2;
-        if (frac >= 0.75) level = 3;
-        if (frac >= 1)    level = 4;
-      }
-      const cls = isOutOfYear ? 'hm-cell out-of-range' : `hm-cell level-${level}`;
-      const tip = entry ? `${d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})}: ${entry.done}/${entry.total} habits` : d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
-      html += `<div class="${cls}" title="${tip}" data-date="${s}"></div>`;
-      d.setDate(d.getDate() + 1);
+  // Cells (flat grid)
+  html += '<div class="heatmap-grid">';
+  dates.forEach(d => {
+    const s = dateStr(d);
+    const entry = dayMap[s];
+    let level = 0;
+    if (entry) {
+      const frac = entry.done / Math.max(entry.total, 1);
+      if (frac >= 0.25) level = 1;
+      if (frac >= 0.5)  level = 2;
+      if (frac >= 0.75) level = 3;
+      if (frac >= 1)    level = 4;
     }
-    html += '</div>';
-  }
+    const tip = entry ? `${d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})}: ${entry.done}/${entry.total} habits` : d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
+    html += `<div class="heatmap-cell" data-level="${level}" title="${tip}"></div>`;
+  });
   html += '</div>';
 
   // Legend
@@ -630,7 +606,7 @@ function renderHistory() {
   }
   html += 'More</div>';
 
-  html += '</div>'; // close heatmap-grid
+  html += '</div>'; // close heatmap-content
   wrap.innerHTML = html;
 
   renderWeeklyBars();
