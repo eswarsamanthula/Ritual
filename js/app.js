@@ -15,6 +15,8 @@ const state = {
   selectedType: 'checkbox',
   logModalHabitId: null,
   pendingSkipHabitId: null, // for skip reason modal
+  limitlessSnapshot: null,
+  limitlessWidgetOn: true,
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -122,6 +124,20 @@ async function showApp(user) {
 
   await seedDefaultHabits();
   await loadAll();
+
+  // Load cross-device syncable data from user_data (limitless snapshot, widget toggle)
+  if (typeof loadAllUserData === 'function') {
+    try {
+      const userData = await loadAllUserData();
+      if (userData.limitless_today_snapshot) state.limitlessSnapshot = userData.limitless_today_snapshot;
+      if (userData.limitless_widget_on === false) {
+        state.limitlessWidgetOn = false;
+      } else if (userData.limitless_widget_on === true) {
+        state.limitlessWidgetOn = true;
+      }
+    } catch (_) {}
+  }
+
   renderView();
   initNotifications();
   initInstallBanner();
@@ -133,6 +149,17 @@ async function showApp(user) {
     clearTimeout(_rtTimer);
     _rtTimer = setTimeout(async () => {
       await loadAll();
+      if (typeof loadAllUserData === 'function') {
+        try {
+          const userData = await loadAllUserData();
+          if (userData.limitless_today_snapshot) state.limitlessSnapshot = userData.limitless_today_snapshot;
+          if (userData.limitless_widget_on === false) {
+            state.limitlessWidgetOn = false;
+          } else if (userData.limitless_widget_on === true) {
+            state.limitlessWidgetOn = true;
+          }
+        } catch (_) {}
+      }
       renderView();
     }, 500);
   });
@@ -190,6 +217,9 @@ function renderToday() {
 
   // Health score widget
   renderHealthScore(pct);
+
+  // Limitless widget
+  renderLimitlessWidget();
 
   // Streak sidebar badge
   renderStreakBadge();
@@ -266,6 +296,62 @@ function renderHealthScore(pct) {
     else if (pct < 90)   subEl.textContent = 'Great shape';
     else                 subEl.textContent = 'Excellent';
   }
+}
+
+// ─── LIMITLESS WIDGET ───────────────────────────────────────
+function renderLimitlessWidget() {
+  const el = document.getElementById('limitless-widget');
+  if (!el) return;
+  if (!state.limitlessWidgetOn) {
+    el.innerHTML = '';
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = '';
+  const snap = state.limitlessSnapshot;
+  if (!snap || !snap.total || snap.total === 0) {
+    el.innerHTML = `
+      <div class="limitless-widget-inner">
+        <div class="limitless-widget-ring">
+          <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="var(--bg-subtle)" stroke-width="4"/>
+          </svg>
+        </div>
+        <div class="limitless-widget-info">
+          <span class="limitless-widget-label">Limitless AI</span>
+          <span class="limitless-widget-stat">No accounts tracked yet.</span>
+          <span class="limitless-widget-streak">Add accounts to see your AI dashboard</span>
+          <div class="limitless-widget-footer">
+            <a href="https://applimitlessai.vercel.app" target="_blank" class="limitless-widget-cta">Open Limitless →</a>
+          </div>
+        </div>
+      </div>`;
+    return;
+  }
+  const r = 34;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - snap.healthScore / 100);
+  el.innerHTML = `
+    <div class="limitless-widget-inner">
+      <div class="limitless-widget-ring">
+        <svg width="80" height="80" viewBox="0 0 80 80">
+          <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--bg-subtle)" stroke-width="4"/>
+          <circle cx="40" cy="40" r="${r}" fill="none" stroke="var(--accent)" stroke-width="4"
+            stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
+            stroke-linecap="round" transform="rotate(-90 40 40)"
+            style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"/>
+        </svg>
+        <span class="limitless-widget-pct">${Math.round(snap.healthScore)}%</span>
+      </div>
+      <div class="limitless-widget-info">
+        <span class="limitless-widget-label">Limitless AI</span>
+        <span class="limitless-widget-stat">${snap.available} of ${snap.total} accounts ready</span>
+        <span class="limitless-widget-streak">🔥 ${snap.streak||0} day streak</span>
+        <div class="limitless-widget-footer">
+          <a href="https://applimitlessai.vercel.app" target="_blank" class="limitless-widget-cta">Open Limitless →</a>
+        </div>
+      </div>
+    </div>`;
 }
 
 // ─── STREAK SIDEBAR BADGE ────────────────────────────────────
@@ -459,6 +545,13 @@ function renderSettings() {
       notifBtn.textContent = 'Enable';
       notifBtn.disabled = false;
     }
+  }
+
+  // Limitless widget toggle state
+  const lt = $('limitless-widget-toggle');
+  if (lt) {
+    lt.textContent = state.limitlessWidgetOn ? 'ON' : 'OFF';
+    lt.className = state.limitlessWidgetOn ? 'widget-toggle-btn' : 'widget-toggle-btn off';
   }
 }
 
@@ -906,18 +999,32 @@ function closeModal(id) {
 }
 
 // ─── THEME ───────────────────────────────────────────────────
+function resolveTheme(saved) {
+  if (saved === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  return saved;
+}
 function applyTheme() {
-  const t = localStorage.getItem('ritual_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', t);
-  $('theme-toggle') && ($('theme-toggle').textContent = t === 'dark' ? '◑' : '◐');
+  const saved = localStorage.getItem('ritual_theme') || 'dark';
+  const resolved = resolveTheme(saved);
+  document.documentElement.setAttribute('data-theme', resolved);
+  const icon = $('theme-toggle');
+  if (icon) icon.textContent = saved === 'system' ? '◑' : (resolved === 'dark' ? '◑' : '◐');
 }
 function cycleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const current = localStorage.getItem('ritual_theme') || 'dark';
   const next = current === 'dark' ? 'light' : 'dark';
   localStorage.setItem('ritual_theme', next);
-  document.documentElement.setAttribute('data-theme', next);
-  $('theme-toggle').textContent = next === 'dark' ? '◑' : '◐';
+  applyTheme();
 }
+// Listen for system theme changes
+(function() {
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  mq.addEventListener('change', () => {
+    if (localStorage.getItem('ritual_theme') === 'system') applyTheme();
+  });
+})();
 
 // ─── BIND EVENTS ─────────────────────────────────────────────
 function bindEvents() {
@@ -1188,10 +1295,9 @@ function bindEvents() {
     btn.addEventListener('click', () => {
       const t = btn.dataset.themePick;
       localStorage.setItem('ritual_theme', t);
-      document.documentElement.setAttribute('data-theme', t);
+      applyTheme();
       document.querySelectorAll('[data-theme-pick]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      $('theme-toggle').textContent = t === 'dark' ? '◑' : '◐';
     });
   });
 
@@ -1199,6 +1305,17 @@ function bindEvents() {
   $('settings-notif-btn')?.addEventListener('click', async () => {
     await requestNotificationPermission();
     renderSettings();
+  });
+
+  // Limitless widget toggle
+  $('limitless-widget-toggle')?.addEventListener('click', async () => {
+    const next = !state.limitlessWidgetOn;
+    state.limitlessWidgetOn = next;
+    $('limitless-widget-toggle').textContent = next ? 'ON' : 'OFF';
+    $('limitless-widget-toggle').className = next ? 'widget-toggle-btn' : 'widget-toggle-btn off';
+    try { await setUserData('limitless_widget_on', next); } catch (_) {}
+    renderView();
+    showToast(next ? 'Limitless widget visible' : 'Limitless widget hidden');
   });
 
   // Export
