@@ -362,17 +362,7 @@ body::after {
 
 /* ─── TODAY VIEW ──────────────────────────────────────────── */
 
-/* Score banner */
-.score-banner {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
+/* Score banner — see above in HEALTH SCORE WIDGET section */
 .score-ring { flex-shrink: 0; }
 .score-ring svg { transform: rotate(-90deg); }
 #score-ring-fill {
@@ -1015,7 +1005,175 @@ body::after {
 .pwa-banner .dismiss-btn { background: none; border: none; color: var(--text-faint); font-size: 1rem; cursor: pointer; }
 .pwa-banner span { flex: 1; }
 
-/* ─── ANIMATIONS ──────────────────────────────────────────── */
+/* ─── STREAK SIDEBAR BADGE ────────────────────────────────── */
+.sidebar-streak-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: color-mix(in srgb, var(--amber) 14%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--amber) 35%, transparent);
+  border-radius: 999px;
+  padding: 0.45rem 0.875rem;
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--amber);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: default;
+  transition: var(--transition);
+  margin-bottom: 0.1rem;
+}
+.sidebar-streak-fire { font-size: 1rem; line-height: 1; }
+.sidebar-streak-count {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 400;
+  line-height: 1;
+  color: var(--amber);
+}
+.sidebar-streak-label { font-size: 0.6rem; letter-spacing: 0.1em; }
+
+/* ─── HEALTH SCORE WIDGET ─────────────────────────────────── */
+.score-banner {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.health-score-widget {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  padding-left: 1.25rem;
+  border-left: 1px solid var(--border-dim);
+}
+.health-ring-wrap {
+  position: relative;
+  width: 56px; height: 56px;
+  flex-shrink: 0;
+}
+.health-ring-wrap svg { position: absolute; inset: 0; }
+.health-ring-pct {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.health-score-info {
+  display: flex; flex-direction: column; gap: 0.1rem;
+}
+.health-score-label {
+  font-size: 0.6rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.health-score-num {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1;
+}
+.health-score-sub {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  font-style: italic;
+  font-family: var(--font-display);
+}
+
+/* ─── SKIP REASON SECTION ─────────────────────────────────── */
+.skip-reasons-section { margin-top: 2rem; }
+.skip-reasons-sub {
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  margin-bottom: 1rem;
+  margin-top: -0.5rem;
+}
+.skip-reasons-empty {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
+.skip-reason-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid var(--border-dim);
+}
+.skip-reason-row:last-child { border-bottom: none; }
+.skip-reason-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  min-width: 72px;
+  flex-shrink: 0;
+}
+.skip-reason-bar-wrap {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-subtle);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.skip-reason-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .5s cubic-bezier(.4,0,.2,1);
+  min-width: 4px;
+}
+.skip-reason-count {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  min-width: 18px;
+  text-align: right;
+}
+
+/* ─── SKIP REASON MODAL ───────────────────────────────────── */
+.skip-modal-hint {
+  font-size: 0.72rem;
+  color: var(--text-faint);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  font-style: italic;
+  font-family: var(--font-display);
+}
+.skip-reason-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.skip-reason-btn {
+  padding: 0.65rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: var(--transition);
+  text-align: center;
+}
+.skip-reason-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+/* ─── RESPONSIVE HEALTH WIDGET ────────────────────────────── */
+@media (max-width: 680px) {
+  .health-score-widget { display: none; }
+}
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 

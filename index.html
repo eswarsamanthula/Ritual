@@ -120,6 +120,11 @@
       </button>
     </nav>
     <div class="sidebar-footer">
+      <div id="sidebar-streak-badge" class="sidebar-streak-badge hidden">
+        <span class="sidebar-streak-fire">🔥</span>
+        <span id="sidebar-streak-count">0</span>
+        <span class="sidebar-streak-label">DAY STREAK</span>
+      </div>
       <div class="sync-badge" id="sync-badge">
         <span class="sync-dot" id="sync-dot"></span>
         <span class="sync-text" id="sync-text">Synced</span>
@@ -164,6 +169,24 @@
           <div class="score-headline" id="score-label">Start your day</div>
           <div class="score-sub-text" id="score-sub">0 of 0 habits done</div>
         </div>
+        <div class="health-score-widget" id="health-score-widget">
+          <div class="health-ring-wrap">
+            <svg width="56" height="56" viewBox="0 0 56 56">
+              <circle cx="28" cy="28" r="22" fill="none" stroke="var(--ring-track)" stroke-width="3"/>
+              <circle id="health-ring-fill" cx="28" cy="28" r="22" fill="none"
+                stroke="var(--green)" stroke-width="3"
+                stroke-dasharray="138.2" stroke-dashoffset="138.2"
+                stroke-linecap="round" transform="rotate(-90 28 28)"
+                style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"/>
+            </svg>
+            <span class="health-ring-pct" id="health-ring-pct">0%</span>
+          </div>
+          <div class="health-score-info">
+            <span class="health-score-label">HEALTH SCORE</span>
+            <span class="health-score-num" id="health-score-num">0/10</span>
+            <span class="health-score-sub" id="health-score-sub">—</span>
+          </div>
+        </div>
       </div>
       <div id="habits-grid"></div>
     </div>
@@ -184,6 +207,11 @@
       <div class="weekly-section">
         <div class="section-title">This Week</div>
         <div class="weekly-bars" id="weekly-bars"></div>
+      </div>
+      <div class="skip-reasons-section">
+        <div class="section-title">Why Habits Skipped</div>
+        <div class="skip-reasons-sub" id="skip-reasons-sub">Track skip reasons when logging 0 for a habit</div>
+        <div id="skip-reasons-bars"></div>
       </div>
     </div>
 
@@ -352,6 +380,30 @@
 </div>
 
 <!-- ══ MODALS ════════════════════════════════════════════════ -->
+
+<!-- SKIP REASON MODAL -->
+<div id="modal-skip" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="skip-modal-title">Why skipping?</h3>
+      <button class="modal-close" data-modal="modal-skip">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="skip-modal-hint">Optional — helps you spot patterns.</p>
+      <div class="skip-reason-grid">
+        <button class="skip-reason-btn" data-reason="Busy">Busy</button>
+        <button class="skip-reason-btn" data-reason="Tired">Tired</button>
+        <button class="skip-reason-btn" data-reason="Forgot">Forgot</button>
+        <button class="skip-reason-btn" data-reason="Travel">Travel</button>
+        <button class="skip-reason-btn" data-reason="Sick">Sick</button>
+        <button class="skip-reason-btn" data-reason="No reason">No reason</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-modal="modal-skip">Skip anyway</button>
+    </div>
+  </div>
+</div>
 
 <!-- ADD/EDIT HABIT MODAL -->
 <div id="modal-habit" class="modal-backdrop">

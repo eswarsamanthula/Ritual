@@ -14,6 +14,7 @@ const state = {
   selectedIcon: '◎',
   selectedType: 'checkbox',
   logModalHabitId: null,
+  pendingSkipHabitId: null, // for skip reason modal
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -187,6 +188,12 @@ function renderToday() {
   $('score-label') && ($('score-label').textContent = scoreLabel(pct));
   $('score-sub') && ($('score-sub').textContent = `${done} of ${total} habits done`);
 
+  // Health score widget
+  renderHealthScore(pct);
+
+  // Streak sidebar badge
+  renderStreakBadge();
+
   // Group by time_of_day
   const groups = { morning: [], afternoon: [], evening: [], any: [] };
   state.habits.forEach(h => groups[h.time_of_day]?.push(h));
@@ -230,6 +237,50 @@ function scoreLabel(pct) {
   if (pct < 90) return 'Almost there';
   if (pct < 100) return 'So close!';
   return 'Perfect day ✦';
+}
+
+// ─── HEALTH SCORE WIDGET ─────────────────────────────────────
+function renderHealthScore(pct) {
+  const ring = $('health-ring-fill');
+  const pctEl = $('health-ring-pct');
+  const numEl = $('health-score-num');
+  const subEl = $('health-score-sub');
+  if (!ring) return;
+
+  const circ = 2 * Math.PI * 22;
+  ring.style.strokeDasharray = circ;
+  ring.style.strokeDashoffset = circ * (1 - pct / 100);
+
+  // Colour ring by score
+  if (pct >= 80) ring.setAttribute('stroke', 'var(--green)');
+  else if (pct >= 50) ring.setAttribute('stroke', 'var(--amber)');
+  else ring.setAttribute('stroke', 'var(--red)');
+
+  const score = Math.round(pct / 10); // 0–10
+  if (pctEl) pctEl.textContent = pct + '%';
+  if (numEl) numEl.textContent = score + '/10';
+  if (subEl) {
+    if (pct === 0)       subEl.textContent = '—';
+    else if (pct < 40)   subEl.textContent = 'Needs work';
+    else if (pct < 70)   subEl.textContent = 'Decent';
+    else if (pct < 90)   subEl.textContent = 'Great shape';
+    else                 subEl.textContent = 'Excellent';
+  }
+}
+
+// ─── STREAK SIDEBAR BADGE ────────────────────────────────────
+function renderStreakBadge() {
+  const badge = $('sidebar-streak-badge');
+  const countEl = $('sidebar-streak-count');
+  if (!badge) return;
+
+  const bestStreak = state.habits.reduce((best, h) => Math.max(best, calcStreak(h.id)), 0);
+  if (bestStreak > 0) {
+    countEl.textContent = bestStreak;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
 }
 
 function buildHabitCard(h) {
@@ -285,8 +336,12 @@ async function toggleCheckbox(habitId) {
   const current = state.todayLogs[habitId] || 0;
   const newVal = current >= 1 ? 0 : 1;
   if (newVal === 0) {
-    await deleteLog(habitId, todayStr());
-    delete state.todayLogs[habitId];
+    // Prompt skip reason before clearing
+    state.pendingSkipHabitId = habitId;
+    const habit = state.habits.find(h => h.id === habitId);
+    $('skip-modal-title').textContent = `Why skipping ${habit?.name || 'habit'}?`;
+    openModal('modal-skip');
+    return;
   } else {
     await upsertLog(habitId, todayStr(), newVal, null);
     state.todayLogs[habitId] = newVal;
@@ -610,6 +665,7 @@ function renderHistory() {
   wrap.innerHTML = html;
 
   renderWeeklyBars();
+  renderSkipReasonBars();
 }
 
 function renderWeeklyBars() {
@@ -638,6 +694,63 @@ function renderWeeklyBars() {
     const pct = (d.done / maxDay) * 100;
     const high = d.done >= Math.ceil(maxDay * 0.7) ? ' high' : '';
     return `<div class="bar-wrap"><div class="bar-fill${high}" style="height:${Math.max(4, pct)}%" title="${d.ds}: ${d.done}/${d.total} habits"></div><span class="bar-label">${DAYS[i]}</span></div>`;
+  }).join('');
+}
+
+// ─── SKIP REASON BARS ────────────────────────────────────────
+function renderSkipReasonBars() {
+  const el = $('skip-reasons-bars');
+  const subEl = $('skip-reasons-sub');
+  if (!el) return;
+
+  // Collect skip reasons from notes in yearLogs (last 30 days)
+  const from = new Date();
+  from.setDate(from.getDate() - 30);
+  const fromStr = dateStr(from);
+
+  const REASONS = ['Busy', 'Tired', 'Forgot', 'Travel', 'Sick', 'No reason'];
+  const counts = {};
+  REASONS.forEach(r => counts[r] = 0);
+
+  state.yearLogs.forEach(l => {
+    if (l.date < fromStr) return;
+    if (l.value !== 0) return; // only skips (logged 0)
+    const note = l.note;
+    if (note && counts[note] !== undefined) {
+      counts[note]++;
+    }
+  });
+
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+
+  if (total === 0) {
+    el.innerHTML = '<p class="skip-reasons-empty">No skip reasons logged yet. When you uncheck a habit, you\'ll be asked why.</p>';
+    if (subEl) subEl.textContent = 'Last 30 days — no data yet';
+    return;
+  }
+
+  if (subEl) subEl.textContent = `Last 30 days — ${total} skip${total !== 1 ? 's' : ''} logged`;
+
+  const maxCount = Math.max(1, ...Object.values(counts));
+  const REASON_COLORS = {
+    'Busy': 'var(--amber)',
+    'Tired': 'var(--accent)',
+    'Forgot': '#89b4c9',
+    'Travel': '#c49ac4',
+    'Sick': 'var(--red)',
+    'No reason': 'var(--text-faint)',
+  };
+
+  el.innerHTML = REASONS.filter(r => counts[r] > 0).map(r => {
+    const pct = Math.round((counts[r] / maxCount) * 100);
+    const color = REASON_COLORS[r] || 'var(--accent)';
+    return `<div class="skip-reason-row">
+      <span class="skip-reason-label">${r}</span>
+      <div class="skip-reason-bar-wrap">
+        <div class="skip-reason-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <span class="skip-reason-count">${counts[r]}</span>
+    </div>`;
   }).join('');
 }
 
@@ -969,6 +1082,35 @@ function bindEvents() {
   });
 
   $('save-log-btn')?.addEventListener('click', saveLog);
+
+  // Skip reason buttons
+  $$('.skip-reason-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const reason = btn.dataset.reason;
+      const habitId = state.pendingSkipHabitId;
+      if (habitId) {
+        // Log 0 with the chosen reason as note
+        await upsertLog(habitId, todayStr(), 0, reason);
+        state.todayLogs[habitId] = 0;
+        state.pendingSkipHabitId = null;
+      }
+      closeModal('modal-skip');
+      renderToday();
+      writeRitualSnapshot();
+    });
+  });
+
+  // "Skip anyway" (no reason) — close modal handler already fires, but we also need to clear log
+  document.querySelector('#modal-skip .btn-ghost[data-modal="modal-skip"]')?.addEventListener('click', async () => {
+    const habitId = state.pendingSkipHabitId;
+    if (habitId) {
+      await deleteLog(habitId, todayStr());
+      delete state.todayLogs[habitId];
+      state.pendingSkipHabitId = null;
+    }
+    renderToday();
+    writeRitualSnapshot();
+  });
 
   // Notifications
   $('enable-notif-btn')?.addEventListener('click', async () => {
