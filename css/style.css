@@ -813,11 +813,11 @@ body::after {
 /* Type toggle */
 .type-toggle { display: flex; gap: 0.4rem; }
 .type-btn {
-  flex: 1; padding: 0.5rem 0.4rem;
+  flex: 1; padding: 0.5rem 0.3rem;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: none;
-  font-family: var(--font-mono); font-size: 0.7rem;
+  font-family: var(--font-mono); font-size: 0.65rem;
   color: var(--text-muted); cursor: pointer;
   transition: var(--transition); text-align: center;
 }
@@ -1552,6 +1552,5 @@ body::after {
   .score-mode-row { flex-wrap: wrap; }
   .heatmap-horiz { display: none; }
   .heatmap-vert { display: flex; flex-direction: column; gap: 3px; }
-  .type-btn { font-size: 0.6rem; padding: 0.4rem 0.2rem; }
   .modal-body { padding-bottom: 2rem; }
 }
