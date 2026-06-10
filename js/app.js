@@ -17,6 +17,10 @@ const state = {
   pendingSkipHabitId: null, // for skip reason modal
   limitlessSnapshot: null,
   limitlessWidgetOn: true,
+  stacks: [],
+  editingStackId: null,
+  selectedStackIcon: '☀',
+  selectedStackColor: HABIT_PALETTE[0],
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -135,6 +139,7 @@ async function showApp(user) {
       } else if (userData.limitless_widget_on === true) {
         state.limitlessWidgetOn = true;
       }
+      if (userData.habit_stacks) state.stacks = userData.habit_stacks;
     } catch (_) {}
   }
 
@@ -165,6 +170,7 @@ async function showApp(user) {
           } else if (userData.limitless_widget_on === true) {
             state.limitlessWidgetOn = true;
           }
+          if (userData.habit_stacks) state.stacks = userData.habit_stacks;
         } catch (_) {}
       }
       renderView();
@@ -191,7 +197,7 @@ function switchView(view) {
   $(`view-${view}`)?.classList.add('active');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-  const titles = { today: 'Today', history: 'History', stats: 'Stats', habits: 'My Habits', settings: 'Settings' };
+  const titles = { today: 'Today', history: 'History', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings' };
   $('view-title').textContent = titles[view] || view;
   renderView();
 }
@@ -200,6 +206,7 @@ function renderView() {
   if (state.currentView === 'today') renderToday();
   else if (state.currentView === 'history') renderHistory();
   else if (state.currentView === 'stats') renderStats();
+  else if (state.currentView === 'stacks') renderStacksView();
   else if (state.currentView === 'habits') renderHabitsList();
   else if (state.currentView === 'settings') renderSettings();
   updateSyncBadge();
@@ -227,6 +234,13 @@ function renderToday() {
 
   // Limitless widget
   renderLimitlessWidget();
+
+  // Habit suggestion
+  renderHabitSuggestion();
+  // Next up card
+  renderNextUp();
+  // Stacks today widget
+  renderStacksToday();
 
   // Streak sidebar badge
   renderStreakBadge();
@@ -390,6 +404,243 @@ function renderStreakBadge() {
   } else {
     badge.classList.add('hidden');
   }
+}
+
+// ─── STACKS CRUD ────────────────────────────────────────────
+function loadStacks() {
+  return state.stacks || [];
+}
+async function saveStacks(stacks) {
+  state.stacks = stacks;
+  try { await setUserData('habit_stacks', stacks); } catch (_) {}
+}
+
+// ─── HABIT SUGGESTION BANNER ────────────────────────────────
+function renderHabitSuggestion() {
+  const el = document.getElementById('habit-suggest');
+  if (!el) return;
+  const hour = new Date().getHours();
+  let currentWindow = 'any';
+  if (hour >= 5 && hour < 12) currentWindow = 'morning';
+  else if (hour >= 12 && hour < 17) currentWindow = 'afternoon';
+  else if (hour >= 17 && hour < 23) currentWindow = 'evening';
+
+  const windowHabits = state.habits.filter(h =>
+    (h.time_of_day === currentWindow || h.time_of_day === 'any') && !isHabitComplete(h)
+  );
+  if (windowHabits.length === 0) { el.classList.add('hidden'); return; }
+
+  const suggested = windowHabits[0];
+  const windowEnd = { morning: '12 PM', afternoon: '5 PM', evening: '11 PM' };
+
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="smart-suggest-header">
+      <span class="smart-suggest-icon">✦</span>
+      <span class="smart-suggest-title">Suggestion</span>
+      <button class="smart-suggest-dismiss" id="suggest-dismiss">✕</button>
+    </div>
+    <div class="smart-suggest-body">
+      <strong>${escHtml(suggested.name)}</strong> — You haven't logged it yet today${currentWindow !== 'any' ? `. ${windowEnd[currentWindow]} window still open` : '.'}
+    </div>`;
+  el.style.borderLeftColor = suggested.color;
+  clearTimeout(el._dismissTimer);
+  el._dismissTimer = setTimeout(() => el.classList.add('hidden'), 15000);
+  const dismissBtn = el.querySelector('#suggest-dismiss');
+  if (dismissBtn) {
+    dismissBtn.onclick = (e) => { e.stopPropagation(); el.classList.add('hidden'); clearTimeout(el._dismissTimer); };
+  }
+}
+
+// ─── NEXT UP CARD ───────────────────────────────────────────
+function renderNextUp() {
+  const el = document.getElementById('next-up-card');
+  if (!el) return;
+  const incomplete = state.habits.filter(h => !isHabitComplete(h));
+  if (incomplete.length === 0) { el.innerHTML = ''; el.style.display = 'none'; return; }
+
+  const hour = new Date().getHours();
+  let currentWindow = 'any';
+  if (hour >= 5 && hour < 12) currentWindow = 'morning';
+  else if (hour >= 12 && hour < 17) currentWindow = 'afternoon';
+  else if (hour >= 17 && hour < 23) currentWindow = 'evening';
+
+  const sorted = [...incomplete].sort((a, b) => {
+    const aWindow = a.time_of_day === currentWindow ? 0 : 1;
+    const bWindow = b.time_of_day === currentWindow ? 0 : 1;
+    if (aWindow !== bWindow) return aWindow - bWindow;
+    const aStreak = calcStreak(a.id) > 0 ? 0 : 1;
+    const bStreak = calcStreak(b.id) > 0 ? 0 : 1;
+    if (aStreak !== bStreak) return aStreak - bStreak;
+    return (a.sort_order || 0) - (b.sort_order || 0);
+  });
+
+  const top = sorted.slice(0, 3);
+  el.style.display = '';
+  el.innerHTML = `<div class="next-up-header"><span class="next-up-title">Next Up</span></div>
+    ${top.map(h => {
+      const complete = isHabitComplete(h);
+      let action = '';
+      if (h.type === 'checkbox') {
+        action = `<button class="habit-check ${complete ? 'done' : ''}" onclick="toggleCheckbox('${h.id}')" style="--hc:${h.color}">${complete ? '✓' : ''}</button>`;
+      } else if (h.type === 'count') {
+        action = `<button class="next-up-inc" onclick="adjustCount('${h.id}', 1)" style="color:${h.color}">+1</button>`;
+      } else {
+        action = `<button class="next-up-inc" onclick="openLogModal('${h.id}')" style="color:${h.color}">Log</button>`;
+      }
+      const streak = calcStreak(h.id);
+      return `<div class="next-up-item" style="--hc:${h.color}">
+        <span class="next-up-icon">${escHtml(h.icon)}</span>
+        <span class="next-up-name">${escHtml(h.name)}</span>
+        ${streak > 0 ? `<span class="next-up-streak">◉ ${streak}d</span>` : ''}
+        ${action}
+      </div>`;
+    }).join('')}`;
+}
+
+// ─── STACKS TODAY WIDGET ────────────────────────────────────
+function renderStacksToday() {
+  const el = document.getElementById('stacks-today-widget');
+  if (!el) return;
+  const stacks = loadStacks();
+  if (stacks.length === 0) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  el.innerHTML = `<div class="stacks-today-header"><span class="stacks-today-title">Stacks</span></div>
+    <div class="stacks-today-list">
+      ${stacks.map(s => {
+        const color = s.color || HABIT_PALETTE[0];
+        const habitCount = (s.habit_ids || []).length;
+        const doneCount = (s.habit_ids || []).filter(id => state.todayLogs[id] > 0).length;
+        const allDone = habitCount > 0 && doneCount === habitCount;
+        return `<div class="stacks-today-item" style="--stk-color:${color};opacity:${allDone ? '.5' : '1'}">
+          <span class="stacks-today-icon">${s.icon || '⊞'}</span>
+          <div class="stacks-today-info">
+            <span class="stacks-today-name">${escHtml(s.name)}</span>
+            <span class="stacks-today-count">${doneCount}/${habitCount}</span>
+          </div>
+          <button class="stacks-today-log" onclick="logStack('${s.id}')" ${allDone ? 'disabled' : ''} style="${allDone ? 'opacity:.3' : ''};color:${color}">Log All</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+// ─── STACKS VIEW ────────────────────────────────────────────
+function renderStacksView() {
+  const list = document.getElementById('stacks-list');
+  if (!list) return;
+  const stacks = loadStacks();
+  if (stacks.length === 0) {
+    list.innerHTML = `<div class="empty-state"><span class="empty-icon">⊞</span><p>No stacks yet.<br/>Create a stack to batch-log related habits.</p><button class="btn-primary" onclick="openStackModal(null)">+ New Stack</button></div>`;
+    return;
+  }
+  list.innerHTML = stacks.map(s => {
+    const color = s.color || HABIT_PALETTE[0];
+    const habitNames = (s.habit_ids || []).map(id => state.habits.find(h => h.id === id)).filter(Boolean);
+    const habitCount = habitNames.length;
+    return `<div class="stack-card" style="--stk-color:${color}">
+      <div class="stack-card-main" onclick="openStackModal('${s.id}')">
+        <span class="stack-card-icon">${s.icon || '⊞'}</span>
+        <div class="stack-card-info">
+          <span class="stack-card-name">${escHtml(s.name)}</span>
+          <span class="stack-card-count">${habitCount} habits</span>
+        </div>
+      </div>
+      <div class="stack-card-actions">
+        <button class="stack-action-btn" onclick="openStackModal('${s.id}')" title="Edit">✎</button>
+        <button class="stack-action-btn danger" onclick="deleteStack('${s.id}')" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ─── LOG STACK (one-tap) ────────────────────────────────────
+async function logStack(stackId) {
+  const stack = loadStacks().find(s => s.id === stackId);
+  if (!stack || !stack.habit_ids) return;
+  const activeIds = stack.habit_ids.filter(id => state.habits.some(h => h.id === id));
+  if (activeIds.length === 0) { showToast('No habits in this stack'); return; }
+
+  let logged = 0;
+  for (const id of activeIds) {
+    const habit = state.habits.find(h => h.id === id);
+    if (!habit || isHabitComplete(habit)) continue;
+    if (habit.type === 'checkbox') {
+      await upsertLog(id, todayStr(), 1, null);
+      state.todayLogs[id] = 1;
+      logged++;
+    } else if (habit.type === 'count') {
+      const cur = state.todayLogs[id] || 0;
+      const next = cur + 1;
+      await upsertLog(id, todayStr(), next, null);
+      state.todayLogs[id] = next;
+      logged++;
+    } else {
+      // time — open log modal for this habit
+      openLogModal(id);
+      showToast('Log the time habit and continue');
+      return;
+    }
+  }
+  await writeRitualSnapshot();
+  renderView();
+  if (logged > 0) showToast(`Logged ${logged} habit${logged > 1 ? 's' : ''} ✓`);
+}
+
+// ─── STACK MODAL ────────────────────────────────────────────
+function openStackModal(stackId) {
+  state.editingStackId = stackId || null;
+  const stack = stackId ? loadStacks().find(s => s.id === stackId) : null;
+  $('modal-stack-title').textContent = stack ? 'Edit Stack' : 'New Stack';
+  $('stack-name-input').value = stack?.name || '';
+  state.selectedStackIcon = stack?.icon || '☀';
+  state.selectedStackColor = stack?.color || HABIT_PALETTE[0];
+
+  $$('#stack-icon-grid .icon-btn').forEach(b => b.classList.toggle('selected', b.dataset.icon === state.selectedStackIcon));
+  $$('#stack-color-picker .color-dot').forEach(d => d.classList.toggle('selected', d.dataset.color === state.selectedStackColor));
+
+  // Populate habit checkboxes
+  const habitList = document.getElementById('stack-habits-checkbox-list');
+  if (habitList) {
+    const selectedIds = stack?.habit_ids || [];
+    if (state.habits.length === 0) {
+      habitList.innerHTML = '<span class="checklist-empty" style="font-size:0.75rem;color:var(--text-faint)">No habits yet — create some first.</span>';
+    } else {
+      habitList.innerHTML = state.habits.map(h => `
+        <label class="stack-habit-check">
+          <input type="checkbox" value="${h.id}" ${selectedIds.includes(h.id) ? 'checked' : ''} />
+          <span class="stack-habit-dot" style="background:${h.color}"></span>
+          ${escHtml(h.name)}
+        </label>
+      `).join('');
+    }
+  }
+  openModal('modal-stack');
+}
+
+async function handleSaveStack() {
+  const name = $('stack-name-input').value.trim();
+  if (!name) { showToast('Enter a stack name'); return; }
+  const habitIds = Array.from(document.querySelectorAll('#stack-habits-checkbox-list input[type=checkbox]:checked')).map(cb => cb.value);
+  const stacks = loadStacks();
+  const stack = { id: state.editingStackId || Date.now().toString(), name, icon: state.selectedStackIcon, color: state.selectedStackColor, habit_ids: habitIds };
+  if (state.editingStackId) {
+    const idx = stacks.findIndex(s => s.id === state.editingStackId);
+    if (idx !== -1) stacks[idx] = stack;
+  } else {
+    stacks.push(stack);
+  }
+  await saveStacks(stacks);
+  closeModal('modal-stack');
+  renderView();
+  showToast(state.editingStackId ? 'Stack updated' : 'Stack created ✓');
+}
+
+async function deleteStack(id) {
+  if (!confirm('Delete this stack? This does not affect your habits.')) return;
+  const stacks = loadStacks().filter(s => s.id !== id);
+  await saveStacks(stacks);
+  renderView();
+  showToast('Stack deleted');
 }
 
 function buildHabitCard(h) {
@@ -1374,6 +1625,28 @@ function bindEvents() {
     state.yearLogs = [];
     showAuth();
   });
+
+  // ══ STACK EVENTS ═══════════════════════════════════════════
+  // Stack icon picker
+  $$('#stack-icon-grid .icon-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.selectedStackIcon = btn.dataset.icon;
+      $$('#stack-icon-grid .icon-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+  // Stack color picker
+  $$('#stack-color-picker .color-dot').forEach(dot => {
+    dot.addEventListener('click', () => {
+      state.selectedStackColor = dot.dataset.color;
+      $$('#stack-color-picker .color-dot').forEach(d => d.classList.remove('selected'));
+      dot.classList.add('selected');
+    });
+  });
+  // Add stack button
+  $('add-stack-btn')?.addEventListener('click', () => openStackModal(null));
+  // Save stack
+  $('save-stack-btn')?.addEventListener('click', handleSaveStack);
 
   // ══ INSTALL BANNER ═════════════════════════════════════════
   $('pwa-install-btn')?.addEventListener('click', async () => {

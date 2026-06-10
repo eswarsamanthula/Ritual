@@ -112,6 +112,9 @@
       <button class="nav-item" data-view="stats">
         <span class="nav-icon">◧</span> Stats
       </button>
+      <button class="nav-item" data-view="stacks">
+        <span class="nav-icon">⊞</span> Stacks
+      </button>
       <button class="nav-item" data-view="habits">
         <span class="nav-icon">◉</span> My Habits
       </button>
@@ -189,6 +192,9 @@
         </div>
       </div>
       <div id="limitless-widget" class="limitless-widget-wrap"></div>
+      <div id="habit-suggest" class="smart-suggest hidden"></div>
+      <div id="next-up-card" class="next-up-card"></div>
+      <div id="stacks-today-widget" class="stacks-today-widget"></div>
       <div id="habits-grid"></div>
     </div>
 
@@ -385,10 +391,23 @@
       </section>
     </div>
 
+    <!-- STACKS -->
+    <div id="view-stacks" class="view">
+      <div class="stacks-header">
+        <span class="section-title">Habit Stacks</span>
+        <button class="btn-primary small" id="add-stack-btn">+ New Stack</button>
+      </div>
+      <p class="stacks-desc">Group habits into stacks and log them all in one tap.</p>
+      <div id="stacks-list" class="stacks-grid">
+        <div class="empty-state"><span class="empty-icon">⊞</span><p>No stacks yet.<br/>Create a stack to batch-log related habits.</p><button class="btn-primary" onclick="openStackModal(null)">+ New Stack</button></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
 <!-- ══ MODALS ════════════════════════════════════════════════ -->
+
 
 <!-- SKIP REASON MODAL -->
 <div id="modal-skip" class="modal-backdrop">
@@ -522,6 +541,56 @@
     <div class="modal-footer">
       <button class="btn-ghost" data-modal="modal-log">Cancel</button>
       <button class="btn-primary modal-save" id="save-log-btn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- STACK MODAL -->
+<div id="modal-stack" class="modal-backdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-stack-title">New Stack</h3>
+      <button class="modal-close" data-modal="modal-stack">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Name</label>
+        <input type="text" id="stack-name-input" placeholder="e.g. Morning Stack" maxlength="30" />
+      </div>
+      <div class="field-group">
+        <label>Icon</label>
+        <div class="icon-grid" id="stack-icon-grid">
+          <button class="icon-btn selected" data-icon="☀">☀</button>
+          <button class="icon-btn" data-icon="◐">◐</button>
+          <button class="icon-btn" data-icon="◑">◑</button>
+          <button class="icon-btn" data-icon="☆">☆</button>
+          <button class="icon-btn" data-icon="♡">♡</button>
+          <button class="icon-btn" data-icon="⚡">⚡</button>
+          <button class="icon-btn" data-icon="⊞">⊞</button>
+          <button class="icon-btn" data-icon="⊡">⊡</button>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Color</label>
+        <div class="color-row" id="stack-color-picker">
+          <div class="color-dot selected" data-color="#7fb685" style="background:#7fb685"></div>
+          <div class="color-dot" data-color="#e8a87c" style="background:#e8a87c"></div>
+          <div class="color-dot" data-color="#89b4c9" style="background:#89b4c9"></div>
+          <div class="color-dot" data-color="#c49ac4" style="background:#c49ac4"></div>
+          <div class="color-dot" data-color="#e07b7b" style="background:#e07b7b"></div>
+          <div class="color-dot" data-color="#b5c987" style="background:#b5c987"></div>
+          <div class="color-dot" data-color="#f0c96e" style="background:#f0c96e"></div>
+          <div class="color-dot" data-color="#8fc9b9" style="background:#8fc9b9"></div>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Habits</label>
+        <div id="stack-habits-checkbox-list" class="stack-habits-list"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-modal="modal-stack">Cancel</button>
+      <button class="btn-primary modal-save" id="save-stack-btn">Save Stack</button>
     </div>
   </div>
 </div>
