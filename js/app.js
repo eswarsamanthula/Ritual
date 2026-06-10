@@ -623,20 +623,21 @@ function renderWeeklyBars() {
   }
 
   const habitsCount = state.habits.length;
-  el.innerHTML = days.map(ds => {
+  const dayData = days.map(ds => {
     const logs = state.yearLogs.filter(l => l.date === ds);
     const done = state.habits.filter(h => {
       const log = logs.find(l => l.habit_id === h.id);
       if (!log) return false;
       return h.type === 'checkbox' ? log.value >= 1 : log.value >= h.target;
     }).length;
-    const pct = habitsCount > 0 ? (done / habitsCount) * 100 : 0;
-    const label = new Date(ds + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' });
-    return `<div class="bar-item">
-      <div class="bar-track"><div class="bar-fill" style="height:${pct}%"></div></div>
-      <div class="bar-label">${label}</div>
-      <div class="bar-val">${done}</div>
-    </div>`;
+    return { ds, done, total: habitsCount };
+  });
+  const maxDay = Math.max(1, ...dayData.map(d => d.done));
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  el.innerHTML = dayData.map((d, i) => {
+    const pct = (d.done / maxDay) * 100;
+    const high = d.done >= Math.ceil(maxDay * 0.7) ? ' high' : '';
+    return `<div class="bar-wrap"><div class="bar-fill${high}" style="height:${Math.max(4, pct)}%" title="${d.ds}: ${d.done}/${d.total} habits"></div><span class="bar-label">${DAYS[i]}</span></div>`;
   }).join('');
 }
 
