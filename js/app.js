@@ -117,6 +117,8 @@ async function showApp(user) {
   await loadAll();
   renderView();
   initNotifications();
+  initInstallBanner();
+  initOfflineDetection();
   subscribeRealtime(async (table) => {
     await loadAll();
     renderView();
@@ -142,7 +144,7 @@ function switchView(view) {
   $(`view-${view}`)?.classList.add('active');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-  const titles = { today: 'Today', history: 'History', stats: 'Stats', habits: 'My Habits' };
+  const titles = { today: 'Today', history: 'History', stats: 'Stats', habits: 'My Habits', settings: 'Settings' };
   $('view-title').textContent = titles[view] || view;
   renderView();
 }
@@ -152,6 +154,8 @@ function renderView() {
   else if (state.currentView === 'history') renderHistory();
   else if (state.currentView === 'stats') renderStats();
   else if (state.currentView === 'habits') renderHabitsList();
+  else if (state.currentView === 'settings') renderSettings();
+  updateSyncBadge();
 }
 
 // ─── TODAY VIEW ──────────────────────────────────────────────
@@ -337,6 +341,173 @@ async function writeRitualSnapshot() {
     });
   } catch (e) { /* silent */ }
 }
+
+// ─── SETTINGS VIEW ──────────────────────────────────────────
+function renderSettings() {
+  if (!currentUser) return;
+  const email = currentUser.email || '';
+  const name = currentUser.user_metadata?.name || currentUser.user_metadata?.full_name || email.split('@')[0] || 'You';
+
+  $('settings-display-name').textContent = name;
+  $('settings-email-display').textContent = email;
+  $('settings-name-input').value = name;
+
+  // Avatar
+  const avatarImg = $('settings-avatar-img');
+  const avatarInitials = $('settings-avatar-initials');
+  const avatarUrl = currentUser.user_metadata?.avatar_url;
+  if (avatarImg && avatarUrl) {
+    avatarImg.src = avatarUrl;
+    avatarImg.style.display = 'block';
+    if (avatarInitials) avatarInitials.style.display = 'none';
+  } else {
+    if (avatarImg) avatarImg.style.display = 'none';
+    if (avatarInitials) {
+      avatarInitials.style.display = 'flex';
+      avatarInitials.textContent = (name || email || 'U')[0].toUpperCase();
+    }
+  }
+
+  // Theme
+  const savedTheme = localStorage.getItem('ritual_theme') || 'dark';
+  document.querySelectorAll('[data-theme-pick]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.themePick === savedTheme);
+  });
+
+  // Notifications status
+  const notifStatus = $('settings-notif-status');
+  const notifBtn = $('settings-notif-btn');
+  if (notifStatus && notifBtn) {
+    const perm = Notification?.permission || 'default';
+    if (perm === 'granted') {
+      notifStatus.textContent = 'Enabled — you will get daily reminders.';
+      notifBtn.textContent = 'Enabled ✓';
+      notifBtn.disabled = true;
+    } else if (perm === 'denied') {
+      notifStatus.textContent = 'Blocked by browser. Go to browser settings to allow.';
+      notifBtn.textContent = 'Blocked';
+      notifBtn.disabled = true;
+    } else {
+      notifStatus.textContent = 'Not enabled yet.';
+      notifBtn.textContent = 'Enable';
+      notifBtn.disabled = false;
+    }
+  }
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────
+async function exportAllData() {
+  try {
+    const habits = state.habits;
+    if (habits.length === 0) { showToast('No habits to export'); return; }
+    const logs = await getLogsRange('2000-01-01', todayStr());
+    let text = `Ritual Export — ${todayStr()}\n${'='.repeat(40)}\n\n`;
+    text += `Total Habits: ${habits.length}\nTotal Logs: ${logs.length}\n\n`;
+    text += `${'─'.repeat(40)}\nHABITS\n${'─'.repeat(40)}\n\n`;
+    habits.forEach(h => {
+      const s = logs.filter(l => l.habit_id === h.id).length;
+      text += `${h.icon} ${h.name} (${h.type}, target: ${h.target}${h.unit ? ' ' + h.unit : ''})\n`;
+      text += `  Total logs: ${s}  Section: ${h.time_of_day}\n\n`;
+    });
+    text += `${'─'.repeat(40)}\nLOGS\n${'─'.repeat(40)}\n\n`;
+    const byDate = {};
+    logs.forEach(l => { if (!byDate[l.date]) byDate[l.date] = []; byDate[l.date].push(l); });
+    const sortedDates = Object.keys(byDate).sort();
+    sortedDates.forEach(d => {
+      text += `${d}\n`;
+      byDate[d].forEach(l => {
+        const h = habits.find(hh => hh.id === l.habit_id);
+        if (h) text += `  ${h.icon} ${h.name}: ${l.value}${h.unit ? ' ' + h.unit : ''}\n`;
+      });
+      text += '\n';
+    });
+    text += `${'='.repeat(40)}\nEnd of export.\n`;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ritual-export-${todayStr()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('Exported ✓');
+  } catch (e) {
+    showToast('Export failed: ' + e.message);
+  }
+}
+
+// ─── INSTALL BANNER ──────────────────────────────────────────
+let _deferredPrompt = null;
+function initInstallBanner() {
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _deferredPrompt = e;
+    const dismissed = localStorage.getItem('ritual_pwa_dismissed');
+    if (!dismissed) showInstallBanner();
+  });
+  window.addEventListener('appinstalled', () => {
+    _deferredPrompt = null;
+    hideInstallBanner();
+    showToast('Ritual installed ✓');
+  });
+  // iOS detection
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  if (isIOS && !navigator.standalone) {
+    const dismissed = localStorage.getItem('ritual_pwa_dismissed');
+    if (!dismissed) showInstallBanner(true);
+  }
+}
+function showInstallBanner(isIOS = false) {
+  const banner = $('pwa-banner');
+  if (!banner) return;
+  banner.classList.remove('hidden');
+  $('pwa-banner-text').textContent = isIOS
+    ? 'Install Ritual: tap Share ↑ then Add to Home Screen.'
+    : 'Install Ritual for quick access.';
+  $('pwa-install-btn').style.display = isIOS ? 'none' : '';
+}
+function hideInstallBanner() {
+  $('pwa-banner')?.classList.add('hidden');
+}
+
+// ─── OFFLINE BANNER ─────────────────────────────────────────
+function initOfflineDetection() {
+  window.addEventListener('offline', () => {
+    $('offline-banner')?.classList.remove('hidden');
+  });
+  window.addEventListener('online', () => {
+    $('offline-banner')?.classList.add('hidden');
+    showToast('Back online — refreshing…');
+    if (currentUser) loadAll().then(() => renderView());
+  });
+  if (!navigator.onLine) {
+    $('offline-banner')?.classList.remove('hidden');
+  }
+}
+
+// ─── SYNC BADGE ─────────────────────────────────────────────
+let _lastSyncTime = null;
+function updateSyncBadge() {
+  const dot = $('sync-dot');
+  const text = $('sync-text');
+  if (!dot || !text) return;
+  _lastSyncTime = new Date();
+  dot.className = 'sync-dot synced';
+  text.textContent = 'Synced';
+}
+function markSyncing() {
+  const dot = $('sync-dot');
+  const text = $('sync-text');
+  if (!dot || !text) return;
+  dot.className = 'sync-dot syncing';
+  text.textContent = 'Syncing…';
+}
+// Patch loadAll for sync badge
+const _ritualOrigLoadAll = loadAll;
+loadAll = async function(opts = {}) {
+  markSyncing();
+  try { return await _ritualOrigLoadAll(opts); }
+  finally { updateSyncBadge(); }
+};
 
 // ─── HISTORY VIEW (HEATMAP) ──────────────────────────────────
 function renderHistory() {
@@ -678,6 +849,9 @@ function bindEvents() {
     showAuth();
   });
 
+  // User pill → settings
+  $('user-pill')?.addEventListener('click', () => switchView('settings'));
+
   // Nav
   $$('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -770,6 +944,134 @@ function bindEvents() {
   $('dismiss-notif-btn')?.addEventListener('click', () => {
     $('notif-banner')?.classList.add('hidden');
     localStorage.setItem('ritual_notif_dismissed', '1');
+  });
+
+  // ══ SETTINGS EVENTS ════════════════════════════════════════
+
+  // Display name
+  $('settings-name-save')?.addEventListener('click', async () => {
+    const name = $('settings-name-input').value.trim();
+    if (!name) { showToast('Enter a name'); return; }
+    const btn = $('settings-name-save');
+    btn.disabled = true;
+    try {
+      const { error } = await _sb.auth.updateUser({ data: { name, full_name: name } });
+      if (error) throw error;
+      if (currentUser) { currentUser.user_metadata.name = name; currentUser.user_metadata.full_name = name; }
+      $('user-name').textContent = name;
+      $('settings-display-name').textContent = name;
+      showToast('Name updated ✓');
+    } catch (e) {
+      showToast(e.message || 'Failed to update name');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Change email
+  $('settings-email-update')?.addEventListener('click', async () => {
+    const email = $('settings-new-email').value.trim();
+    if (!email) { showToast('Enter a new email'); return; }
+    const btn = $('settings-email-update');
+    btn.disabled = true;
+    try {
+      const { error } = await _sb.auth.updateUser({ email });
+      if (error) throw error;
+      showToast('Confirmation email sent ✉');
+      $('settings-new-email').value = '';
+    } catch (e) {
+      showToast(e.message || 'Failed to update email');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Change password
+  $('settings-password-change')?.addEventListener('click', async () => {
+    const pw = $('settings-new-password').value;
+    const confirm = $('settings-confirm-password').value;
+    if (pw.length < 6) { showToast('Password must be 6+ characters'); return; }
+    if (pw !== confirm) { showToast('Passwords do not match'); return; }
+    const btn = $('settings-password-change');
+    btn.disabled = true;
+    try {
+      const { error } = await _sb.auth.updateUser({ password: pw });
+      if (error) throw error;
+      showToast('Password changed ✓');
+      $('settings-new-password').value = '';
+      $('settings-confirm-password').value = '';
+    } catch (e) {
+      showToast(e.message || 'Failed to change password');
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Theme pick
+  $$('[data-theme-pick]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.dataset.themePick;
+      localStorage.setItem('ritual_theme', t);
+      document.documentElement.setAttribute('data-theme', t);
+      document.querySelectorAll('[data-theme-pick]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      $('theme-toggle').textContent = t === 'dark' ? '◑' : '◐';
+    });
+  });
+
+  // Settings notifications
+  $('settings-notif-btn')?.addEventListener('click', async () => {
+    await requestNotificationPermission();
+    renderSettings();
+  });
+
+  // Export
+  $('settings-export-btn')?.addEventListener('click', exportAllData);
+
+  // Delete all data
+  $('settings-delete-all-btn')?.addEventListener('click', async () => {
+    if (!confirm('Delete ALL your habits and logs? This cannot be undone.')) return;
+    if (!confirm('Are you sure? This is permanent.')) return;
+    try {
+      for (const h of state.habits) {
+        const { error } = await _sb.from('habit_logs').delete().eq('user_id', currentUser.id).eq('habit_id', h.id);
+        if (error) throw error;
+        await _sb.from('habits').delete().eq('id', h.id).eq('user_id', currentUser.id);
+      }
+      state.habits = [];
+      state.todayLogs = {};
+      state.yearLogs = [];
+      await loadAll();
+      renderView();
+      showToast('All data deleted');
+    } catch (e) {
+      showToast('Error: ' + e.message);
+    }
+  });
+
+  // Sign out from settings
+  $('settings-signout-btn')?.addEventListener('click', async () => {
+    if (!confirm('Sign out?')) return;
+    await signOut();
+    state.habits = [];
+    state.todayLogs = {};
+    state.yearLogs = [];
+    showAuth();
+  });
+
+  // ══ INSTALL BANNER ═════════════════════════════════════════
+  $('pwa-install-btn')?.addEventListener('click', async () => {
+    if (_deferredPrompt) {
+      _deferredPrompt.prompt();
+      const result = await _deferredPrompt.userChoice;
+      if (result.outcome === 'accepted') showToast('Installing Ritual…');
+      _deferredPrompt = null;
+    }
+    hideInstallBanner();
+  });
+  $('pwa-dismiss-btn')?.addEventListener('click', () => {
+    hideInstallBanner();
+    localStorage.setItem('ritual_pwa_dismissed', '1');
   });
 }
 

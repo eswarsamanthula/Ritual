@@ -115,9 +115,16 @@
       <button class="nav-item" data-view="habits">
         <span class="nav-icon">◉</span> My Habits
       </button>
+      <button class="nav-item" data-view="settings">
+        <span class="nav-icon">⊙</span> Settings
+      </button>
     </nav>
     <div class="sidebar-footer">
-      <div class="user-pill">
+      <div class="sync-badge" id="sync-badge">
+        <span class="sync-dot" id="sync-dot"></span>
+        <span class="sync-text" id="sync-text">Synced</span>
+      </div>
+      <div class="user-pill" id="user-pill">
         <img id="user-avatar" src="" alt="" class="avatar" style="display:none" />
         <span id="user-name">—</span>
       </div>
@@ -200,6 +207,138 @@
     <!-- MY HABITS -->
     <div id="view-habits" class="view">
       <div id="habits-manage-list"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="view-settings" class="view">
+      <!-- Profile -->
+      <section class="settings-section">
+        <div class="settings-section-header">
+          <span class="settings-section-icon">◉</span>
+          <span>Profile</span>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-row row-display">
+            <div class="settings-avatar-wrap">
+              <img id="settings-avatar-img" src="" alt="" class="settings-avatar" style="display:none" />
+              <div id="settings-avatar-initials" class="settings-avatar-initials"></div>
+            </div>
+            <div class="settings-display-info">
+              <div id="settings-display-name" class="settings-display-name">—</div>
+              <div id="settings-email-display" class="settings-email-display">—</div>
+            </div>
+          </div>
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Display Name</div>
+            </div>
+            <div style="display:flex;gap:0.4rem;align-items:center">
+              <input type="text" id="settings-name-input" placeholder="Your name" class="settings-inline-input" />
+              <button class="btn-ghost small" id="settings-name-save">Save</button>
+            </div>
+          </div>
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Change Email</div>
+            </div>
+            <div style="display:flex;gap:0.4rem;align-items:center">
+              <input type="email" id="settings-new-email" placeholder="New email" class="settings-inline-input" />
+              <button class="btn-ghost small" id="settings-email-update">Update</button>
+            </div>
+          </div>
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Change Password</div>
+            </div>
+            <div style="display:flex;gap:0.4rem;align-items:center;flex-wrap:wrap">
+              <input type="password" id="settings-new-password" placeholder="New password" class="settings-inline-input" />
+              <input type="password" id="settings-confirm-password" placeholder="Confirm" class="settings-inline-input" />
+              <button class="btn-ghost small" id="settings-password-change">Change</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preferences -->
+      <section class="settings-section">
+        <div class="settings-section-header">
+          <span class="settings-section-icon">◑</span>
+          <span>Preferences</span>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Theme</div>
+              <div class="settings-row-sub">Dark or light mode.</div>
+            </div>
+            <div class="theme-toggle-group">
+              <button class="theme-pick-btn" data-theme-pick="light">Light</button>
+              <button class="theme-pick-btn" data-theme-pick="dark">Dark</button>
+            </div>
+          </div>
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Notifications</div>
+              <div class="settings-row-sub" id="settings-notif-status">Not enabled yet.</div>
+            </div>
+            <button class="btn-primary small" id="settings-notif-btn">Enable</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Export -->
+      <section class="settings-section">
+        <div class="settings-section-header">
+          <span class="settings-section-icon">◧</span>
+          <span>Export</span>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Habits & Logs</div>
+              <div class="settings-row-sub">Download all your data as a .txt file.</div>
+            </div>
+            <button class="btn-ghost small" id="settings-export-btn">Export</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- App Info -->
+      <section class="settings-section">
+        <div class="settings-section-header">
+          <span class="settings-section-icon">◎</span>
+          <span>About</span>
+        </div>
+        <div class="settings-card">
+          <div class="settings-card-row row-display">
+            <span style="font-size:0.75rem;color:var(--text-muted)">Ritual v1.0 · Created by <strong>Eswar Samanthula</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Danger Zone -->
+      <section class="settings-section">
+        <div class="settings-section-header danger-header">
+          <span class="settings-section-icon">⚠</span>
+          <span>Danger Zone</span>
+        </div>
+        <div class="settings-card danger-card">
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Delete All Data</div>
+              <div class="settings-row-sub danger-sub">Permanently erase all habits and logs. Cannot be undone.</div>
+            </div>
+            <button class="btn-danger small" id="settings-delete-all-btn">Delete All</button>
+          </div>
+          <div class="settings-card-row row-action">
+            <div class="settings-row-text">
+              <div class="settings-row-label">Sign Out</div>
+              <div class="settings-row-sub">Sign out of your account.</div>
+            </div>
+            <button class="btn-ghost small danger" id="settings-signout-btn">Sign Out</button>
+          </div>
+        </div>
+      </section>
     </div>
 
   </main>
@@ -321,6 +460,18 @@
 
 <!-- TOAST -->
 <div id="toast" class="toast"></div>
+
+<!-- OFFLINE BANNER -->
+<div id="offline-banner" class="offline-banner hidden">
+  <span>You are offline — showing cached data.</span>
+</div>
+
+<!-- PWA INSTALL BANNER -->
+<div id="pwa-banner" class="pwa-banner hidden">
+  <span id="pwa-banner-text">Install Ritual for quick access.</span>
+  <button id="pwa-install-btn" class="btn-primary small">Install</button>
+  <button id="pwa-dismiss-btn" class="dismiss-btn">✕</button>
+</div>
 
 <!-- NOTIFICATION BANNER -->
 <div id="notif-banner" class="notif-banner hidden">
