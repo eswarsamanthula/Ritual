@@ -65,6 +65,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* ─── SCROLLBAR ────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+
 /* ─── GRAIN OVERLAY ───────────────────────────────────────── */
 body::after {
   content: '';
