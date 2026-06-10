@@ -29,9 +29,10 @@ function initSupabase() {
 // ─── AUTH — GOOGLE ───────────────────────────────────────────
 async function signInWithGoogle() {
   if (!_sb) throw new Error('Supabase not configured');
+  const redirectTo = window.location.origin + window.location.pathname;
   const { error } = await _sb.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo }
   });
   if (error) throw error;
 }
@@ -39,9 +40,10 @@ async function signInWithGoogle() {
 // ─── AUTH — EMAIL SIGN UP ────────────────────────────────────
 async function signUpWithEmail(email, password) {
   if (!_sb) throw new Error('Supabase not configured');
+  const redirectTo = window.location.origin + window.location.pathname;
   const { data, error } = await _sb.auth.signUp({
     email, password,
-    options: { emailRedirectTo: window.location.href }
+    options: { emailRedirectTo: redirectTo }
   });
   if (error) throw error;
   return data;

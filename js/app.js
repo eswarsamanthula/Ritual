@@ -24,6 +24,7 @@ const state = {
 };
 
 const TODAY = new Date().toISOString().slice(0, 10);
+let _showAppGuard = false;
 
 // ─── UTILS ───────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
@@ -81,18 +82,21 @@ async function init() {
     $('email-action-btn').disabled = true;
     showAuth();
   } else {
-    let _appShown = false;
-    onAuthChange(async (session) => {
-      if (session) {
-        if (!_appShown) { _appShown = true; await showApp(session.user); }
-      } else {
-        _appShown = false;
-        showAuth();
-      }
-    });
     const session = await getSession();
-    if (session && !_appShown) { _appShown = true; await showApp(session.user); }
-    else if (!session) showAuth();
+    if (session && !_showAppGuard) {
+      try { await showApp(session.user); } catch (e) { console.error('Init showApp failed:', e); showAuth(); }
+    } else if (!session) {
+      showAuth();
+    }
+    onAuthChange(async (session, event) => {
+      try {
+        if (!session) {
+          if (event === 'SIGNED_OUT') { _showAppGuard = false; showAuth(); }
+          return;
+        }
+        if (!_showAppGuard) { await showApp(session.user); }
+      } catch (e) { console.error('Auth change error:', e); }
+    });
   }
 
   bindEvents();
@@ -100,11 +104,17 @@ async function init() {
 
 // ─── AUTH SCREENS ────────────────────────────────────────────
 function showAuth() {
+  $('#loading-screen')?.classList.add('hidden');
   $('auth-screen').classList.add('active');
   $('app-screen').classList.remove('active');
 }
 
 async function showApp(user) {
+  if (_showAppGuard) return;
+  _showAppGuard = true;
+
+  $('#loading-screen')?.classList.add('hidden');
+
   $('auth-screen').classList.remove('active');
   $('app-screen').classList.add('active');
 
