@@ -510,14 +510,18 @@ loadAll = async function(opts = {}) {
 };
 
 // ─── HISTORY VIEW (HEATMAP) ──────────────────────────────────
+let heatmapYearOffset = 0;
+
 function renderHistory() {
   const wrap = $('heatmap-wrap');
   if (!wrap) return;
 
-  // Build day→completion map
-  const habitsCount = state.habits.length;
-  const dayMap = {}; // date → fraction completed
+  // Compute target year
+  const targetYear = new Date().getFullYear() + heatmapYearOffset;
 
+  // All logs from the user's tracked range
+  const habitsCount = state.habits.length;
+  const dayMap = {};
   state.yearLogs.forEach(log => {
     const h = state.habits.find(h => h.id === log.habit_id);
     if (!h) return;
@@ -526,29 +530,53 @@ function renderHistory() {
     if (complete) dayMap[log.date].done++;
   });
 
-  // Build 52-week grid
-  const today = new Date();
-  const start = new Date(today);
-  start.setDate(start.getDate() - 364);
-  // Align to Sunday
-  start.setDate(start.getDate() - start.getDay());
+  // Year label
+  $('heatmap-year').textContent = targetYear;
 
+  // Empty state
+  const hasAnyData = Object.keys(dayMap).length > 0;
+  if (!hasAnyData || habitsCount === 0) {
+    wrap.innerHTML = `<div class="empty-state heatmap-empty">
+      <span class="empty-icon">▦</span>
+      <p>Not enough data yet.<br/>Log some habits to see your heatmap.</p>
+    </div>`;
+    renderWeeklyBars();
+    return;
+  }
+
+  // Determine date range: full year + pad to nearest Sunday
+  const jan1 = new Date(targetYear, 0, 1);
+  const dec31 = new Date(targetYear, 11, 31);
+  const start = new Date(jan1);
+  start.setDate(start.getDate() - start.getDay()); // pad to previous Sunday
+
+  const end = new Date(dec31);
+  // Pad end to a Saturday (end after last day of year)
+  const tempEnd = new Date(end);
+  tempEnd.setDate(tempEnd.getDate() + (6 - tempEnd.getDay()));
+  const totalDays = Math.round((tempEnd - start) / (1000 * 60 * 60 * 24)) + 1;
+  const numWeeks = Math.ceil(totalDays / 7);
+
+  // Set dynamic column count
+  wrap.style.setProperty('--hm-cols', numWeeks);
+
+  // Month labels
   const months = [];
   let currentMonth = -1;
-  let colIdx = 0;
-
-  let html = '<div class="heatmap-grid">';
-  // Month labels row
-  html += '<div class="heatmap-months">';
-  const tempD = new Date(start);
-  for (let w = 0; w < 53; w++) {
-    const m = tempD.getMonth();
+  const tmp = new Date(start);
+  for (let w = 0; w < numWeeks; w++) {
+    const m = tmp.getMonth();
     if (m !== currentMonth) {
-      months.push({ idx: w, label: tempD.toLocaleString('default', { month: 'short' }) });
+      months.push({ idx: w, label: tmp.toLocaleString('default', { month: 'short' }) });
       currentMonth = m;
     }
-    tempD.setDate(tempD.getDate() + 7);
+    tmp.setDate(tmp.getDate() + 7);
   }
+
+  let html = '<div class="heatmap-grid">';
+
+  // Month row
+  html += '<div class="heatmap-months">';
   months.forEach(m => {
     html += `<span class="heatmap-month" style="grid-column:${m.idx + 1}">${m.label}</span>`;
   });
@@ -560,31 +588,39 @@ function renderHistory() {
   // Cells
   html += '<div class="heatmap-cells">';
   const d = new Date(start);
-  for (let w = 0; w < 53; w++) {
+  for (let w = 0; w < numWeeks; w++) {
     html += '<div class="heatmap-col">';
     for (let day = 0; day < 7; day++) {
       const s = dateStr(d);
-      const isFuture = d > today;
+      const isOutOfYear = d < jan1 || d > dec31;
       const entry = dayMap[s];
       let level = 0;
-      if (entry) {
+      if (entry && !isOutOfYear) {
         const frac = entry.done / Math.max(entry.total, 1);
         if (frac >= 0.25) level = 1;
         if (frac >= 0.5)  level = 2;
         if (frac >= 0.75) level = 3;
         if (frac >= 1)    level = 4;
       }
-      const cls = isFuture ? 'hm-cell future' : `hm-cell level-${level}`;
-      const tip = entry ? `${formatDate(s)}: ${entry.done}/${entry.total} habits` : formatDate(s);
+      const cls = isOutOfYear ? 'hm-cell out-of-range' : `hm-cell level-${level}`;
+      const tip = entry ? `${d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})}: ${entry.done}/${entry.total} habits` : d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
       html += `<div class="${cls}" title="${tip}" data-date="${s}"></div>`;
       d.setDate(d.getDate() + 1);
     }
     html += '</div>';
   }
-  html += '</div></div>';
+  html += '</div>';
+
+  // Legend
+  html += '<div class="heatmap-legend">Less';
+  for (let i = 0; i <= 4; i++) {
+    html += `<span class="heatmap-legend-swatch l${i}"></span>`;
+  }
+  html += 'More</div>';
+
+  html += '</div>'; // close heatmap-grid
   wrap.innerHTML = html;
 
-  // Weekly summary
   renderWeeklyBars();
 }
 
@@ -861,6 +897,15 @@ function bindEvents() {
       $('sidebar-overlay')?.classList.remove('visible');
     });
   });
+
+  // Sidebar logo → Today
+  $('sidebar-header')?.addEventListener('click', () => {
+    if (state.currentView !== 'today') switchView('today');
+  });
+
+  // Heatmap year nav
+  $('heatmap-prev')?.addEventListener('click', () => { heatmapYearOffset--; renderHistory(); });
+  $('heatmap-next')?.addEventListener('click', () => { heatmapYearOffset++; renderHistory(); });
 
   // Hamburger
   $('hamburger')?.addEventListener('click', () => {

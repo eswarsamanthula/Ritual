@@ -97,7 +97,7 @@
 
   <!-- Sidebar -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
+    <div class="sidebar-header" id="sidebar-header">
       <img src="icons/icon-192.png" class="logo-icon small" alt="Ritual" />
       <span class="logo-text small">Ritual</span>
       <button class="sidebar-close" id="sidebar-close">✕</button>
@@ -171,8 +171,15 @@
     <!-- HISTORY -->
     <div id="view-history" class="view">
       <div class="heatmap-section">
-        <div class="section-title">Year in Review</div>
-        <div id="heatmap-wrap"></div>
+        <div class="heatmap-header">
+          <span class="section-title">Year in Review</span>
+          <div class="heatmap-year-nav">
+            <button class="heatmap-nav-btn" id="heatmap-prev">←</button>
+            <span id="heatmap-year" class="heatmap-year-label">2026</span>
+            <button class="heatmap-nav-btn" id="heatmap-next">→</button>
+          </div>
+        </div>
+        <div class="heatmap-wrap-bordered" id="heatmap-wrap"></div>
       </div>
       <div class="weekly-section">
         <div class="section-title">This Week</div>
