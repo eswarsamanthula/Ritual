@@ -104,7 +104,7 @@ async function init() {
 
 // ─── AUTH SCREENS ────────────────────────────────────────────
 function showAuth() {
-  $('#loading-screen')?.classList.add('hidden');
+  $('loading-screen')?.classList.add('hidden');
   $('auth-screen').classList.add('active');
   $('app-screen').classList.remove('active');
 }
@@ -113,7 +113,7 @@ async function showApp(user) {
   if (_showAppGuard) return;
   _showAppGuard = true;
 
-  $('#loading-screen')?.classList.add('hidden');
+  $('loading-screen')?.classList.add('hidden');
 
   $('auth-screen').classList.remove('active');
   $('app-screen').classList.add('active');
