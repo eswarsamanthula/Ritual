@@ -76,9 +76,9 @@ function calcStreak(habitId) {
 function calcMomentumDebt(habitId) {
   const habit = state.habits.find(h => h.id === habitId);
   if (!habit) return 0;
-  const logs = state.yearLogs
-    .filter(l => l.habit_id === habitId)
-    .reduce((m, l) => { m[l.date] = l.value; return m; }, {});
+  const habitLogs = state.yearLogs.filter(l => l.habit_id === habitId);
+  if (habitLogs.length === 0) return 0;
+  const logs = habitLogs.reduce((m, l) => { m[l.date] = l.value; return m; }, {});
   let debt = 0;
   const d = new Date();
   const tVal = logs[todayStr()];
@@ -378,15 +378,18 @@ function renderToday() {
   const total = state.habits.length;
   const done = state.habits.filter(h => isHabitComplete(h)).length;
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const cons = calcConsistencyScore();
+  const perf = calcPerfectionScore();
+  const displayScore = state.scoreMode === 'consistency' ? cons : state.scoreMode === 'perfection' ? perf : pct;
 
   // Score ring
   const ring = $('score-ring-fill');
   if (ring) {
     const circ = 2 * Math.PI * 30;
     ring.style.strokeDasharray = circ;
-    ring.style.strokeDashoffset = circ * (1 - pct / 100);
+    ring.style.strokeDashoffset = circ * (1 - displayScore / 100);
   }
-  $('score-pct') && ($('score-pct').textContent = pct + '%');
+  $('score-pct') && ($('score-pct').textContent = displayScore + '%');
   $('score-label') && ($('score-label').textContent = scoreLabel(pct));
   $('score-sub') && ($('score-sub').textContent = `${done} of ${total} habits done`);
 
@@ -399,8 +402,6 @@ function renderToday() {
       `<button class="score-mode-btn ${state.scoreMode === m ? 'active' : ''}" onclick="toggleScoreMode('${m}')">${ms[i]}</button>`
     ).join('');
   }
-  const cons = calcConsistencyScore();
-  const perf = calcPerfectionScore();
   const scoreVal = state.scoreMode === 'consistency' ? cons + '%' : state.scoreMode === 'perfection' ? perf + '%' : cons + '% · ' + perf + '%';
   $('score-mode-val') && ($('score-mode-val').textContent = scoreVal);
 
@@ -409,9 +410,6 @@ function renderToday() {
 
   // Limitless widget
   renderLimitlessWidget();
-
-  // Limitless sync message
-  renderLimitlessSyncMessage();
 
   // Habit suggestion
   renderHabitSuggestion();
@@ -573,23 +571,6 @@ function renderLimitlessWidget() {
 function toggleScoreMode(mode) {
   state.scoreMode = mode;
   renderToday();
-}
-
-function renderLimitlessSyncMessage() {
-  const el = $('limitless-sync-message');
-  if (!el) return;
-  const snap = state.limitlessSnapshot;
-  if (!snap || !snap.total) { el.innerHTML = ''; el.style.display = 'none'; return; }
-  el.style.display = '';
-  const hs = snap.healthScore;
-  // Pick a compatible habit
-  const compat = state.habits.find(h => !isHabitComplete(h) && /[🤖💻📝📊🎨📖✍📷🎵]/i.test(h.icon)) || state.habits.find(h => !isHabitComplete(h));
-  const hName = compat ? compat.name : 'your habits';
-  let msg, mood;
-  if (hs >= 80) { msg = `All AI accounts ready — great time for ${hName}`; mood = 'high'; }
-  else if (hs >= 50) { msg = `${hs}% accounts available — try ${hName} now`; mood = 'mid'; }
-  else { msg = `Some accounts resetting — good for offline ${hName}`; mood = 'low'; }
-  el.innerHTML = `<div class="sync-score sync-${mood}"><span class="sync-icon">◉</span> ${msg}</div>`;
 }
 
 // ─── STREAK SIDEBAR BADGE ────────────────────────────────────
@@ -875,7 +856,7 @@ function buildHabitCard(h) {
   const badges = [];
   if (isRest) badges.push(`<span class="rest-badge">⛱ Rest</span>`);
   if (streak > 0) badges.push(`<span class="streak-chip" style="color:${h.color}">◉ ${streak}d</span>`);
-  if (debt > 1) badges.push(`<span class="debt-chip" style="color:var(--accent-warm)">−${debt}d</span>`);
+  if (debt > 0) badges.push(`<span class="debt-chip" style="color:var(--accent-warm)">−${debt}d</span>`);
   if (isTrigger) badges.push(`<span class="pair-badge">↗</span>`);
 
   return `<div class="habit-card ${complete ? 'complete' : ''} ${isRest ? 'rest-mode' : ''}" style="--hc:${h.color}">
@@ -898,7 +879,7 @@ function buildHabitCard(h) {
       </div>
       ${controls}
       <div class="habit-card-actions">
-        <button class="habit-card-menu-btn" onclick="toggleRestDay('${h.id}')" title="${isRest ? 'Unmark rest day' : 'Mark rest day'}">☰</button>
+        <button class="habit-card-menu-btn" onclick="toggleRestDay('${h.id}')" title="${isRest ? 'Unmark rest day' : 'Mark rest day'}">⋯</button>
       </div>
     </div>
   </div>`;

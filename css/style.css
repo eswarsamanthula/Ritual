@@ -411,7 +411,6 @@ body::after {
   padding: 0.875rem 1rem;
   transition: var(--transition);
   position: relative;
-  overflow: hidden;
 }
 .habit-card::before {
   content: '';
@@ -1460,7 +1459,7 @@ body::after {
 
 /* ─── REST BADGE ─────────────────────────────────────────── */
 .rest-badge { font-size: 0.6rem; color: var(--text-muted); padding: 1px 5px; border-radius: 4px; background: var(--bg-subtle); text-transform: uppercase; letter-spacing: 0.05em; }
-.habit-card.rest-mode { opacity: 0.6; }
+.habit-card.rest-mode { opacity: 0.8; }
 .habit-card.rest-mode .habit-ring-wrap { filter: grayscale(0.6); }
 
 /* ─── PAIR BADGE ─────────────────────────────────────────── */
@@ -1471,13 +1470,6 @@ body::after {
 .habit-card-menu-btn { background: none; border: none; color: var(--text-faint); font-size: 0.7rem; cursor: pointer; padding: 2px 4px; border-radius: 3px; transition: var(--transition); opacity: 0; }
 .habit-card:hover .habit-card-menu-btn { opacity: 0.5; }
 .habit-card-menu-btn:hover { opacity: 1 !important; background: var(--bg-subtle); }
-
-/* ─── LIMITLESS SYNC MESSAGE ─────────────────────────────── */
-.sync-score { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; border-radius: var(--radius-sm); margin-bottom: 0.75rem; font-size: 0.72rem; line-height: 1.4; }
-.sync-icon { font-size: 0.5rem; flex-shrink: 0; }
-.sync-high { background: color-mix(in srgb, var(--green) 8%, transparent); color: var(--green); border-left: 2px solid var(--green); }
-.sync-mid { background: color-mix(in srgb, var(--amber) 8%, transparent); color: var(--amber); border-left: 2px solid var(--amber); }
-.sync-low { background: color-mix(in srgb, var(--red) 8%, transparent); color: var(--red); border-left: 2px solid var(--red); }
 
 /* ─── PAIR MODAL ─────────────────────────────────────────── */
 #pair-list { display: flex; flex-direction: column; gap: 0.4rem; }
