@@ -276,6 +276,7 @@ async function toggleCheckbox(habitId) {
     state.todayLogs[habitId] = newVal;
   }
   renderToday();
+  writeRitualSnapshot();
 }
 
 async function adjustCount(habitId, delta) {
@@ -291,6 +292,7 @@ async function adjustCount(habitId, delta) {
     state.todayLogs[habitId] = next;
   }
   renderToday();
+  writeRitualSnapshot();
 }
 
 function openLogModal(habitId) {
@@ -316,7 +318,24 @@ async function saveLog() {
   }
   closeModal('modal-log');
   await loadAll();
+  await writeRitualSnapshot();
   renderView();
+}
+
+// ─── RITUAL SNAPSHOT (for Limitless widget) ──────────────────
+async function writeRitualSnapshot() {
+  const total = state.habits.length;
+  if (total === 0) return;
+  const done = state.habits.filter(h => isHabitComplete(h)).length;
+  const pct = Math.round((done / total) * 100);
+  let bestStreak = 0;
+  state.habits.forEach(h => { const s = calcStreak(h.id); if (s > bestStreak) bestStreak = s; });
+  try {
+    await setUserData('ritual_today_snapshot', {
+      pct, done, total, streak: bestStreak,
+      updatedAt: new Date().toISOString()
+    });
+  } catch (e) { /* silent */ }
 }
 
 // ─── HISTORY VIEW (HEATMAP) ──────────────────────────────────

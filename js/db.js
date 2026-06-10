@@ -218,3 +218,34 @@ function unsubscribeRealtime() {
   _channels.forEach(ch => _sb?.removeChannel(ch));
   _channels = [];
 }
+
+// ─── USER DATA (shared key-value sync with Limitless) ──────
+async function loadAllUserData() {
+  if (!_sb || !currentUser) return {};
+  const { data, error } = await _sb
+    .from('user_data')
+    .select('key, value')
+    .eq('user_id', currentUser.id);
+  if (error) throw error;
+  const map = {};
+  for (const row of data || []) map[row.key] = row.value;
+  return map;
+}
+
+async function setUserData(key, value) {
+  if (!_sb || !currentUser) throw new Error('Not authenticated');
+  const { error } = await _sb
+    .from('user_data')
+    .upsert({ user_id: currentUser.id, key, value }, { onConflict: 'user_id, key' });
+  if (error) throw error;
+}
+
+async function deleteUserData(key) {
+  if (!_sb || !currentUser) throw new Error('Not authenticated');
+  const { error } = await _sb
+    .from('user_data')
+    .delete()
+    .eq('user_id', currentUser.id)
+    .eq('key', key);
+  if (error) throw error;
+}
