@@ -69,6 +69,13 @@ async function getSession() {
   return data?.session || null;
 }
 
+// --- AUTH � FRESH USER (server-side, not from JWT) ----------
+async function getFreshUser() {
+  if (!_sb) return null;
+  const { data } = await _sb.auth.getUser();
+  return data?.user || null;
+}
+
 // ─── AUTH — LISTEN ───────────────────────────────────────────
 function onAuthChange(callback) {
   if (!_sb) return;

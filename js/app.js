@@ -101,6 +101,12 @@ async function showApp(user) {
   $('auth-screen').classList.remove('active');
   $('app-screen').classList.add('active');
 
+  // Fresh user fetch (server-side, not from JWT) for cross-device consistency
+  if (typeof getFreshUser === 'function') {
+    const fresh = await getFreshUser();
+    if (fresh) { user = fresh; currentUser = fresh; }
+  }
+
   if (user) {
     const name = user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'You';
     $('user-name').textContent = name;
@@ -119,9 +125,15 @@ async function showApp(user) {
   initNotifications();
   initInstallBanner();
   initOfflineDetection();
+
+  // Live cross-device sync with 500ms debounce
+  let _rtTimer;
   subscribeRealtime(async (table) => {
-    await loadAll();
-    renderView();
+    clearTimeout(_rtTimer);
+    _rtTimer = setTimeout(async () => {
+      await loadAll();
+      renderView();
+    }, 500);
   });
 }
 
