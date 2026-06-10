@@ -1401,21 +1401,13 @@ function renderHistory() {
 
   const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  let html = '<div class="heatmap-content">';
-
-  // Month labels
-  html += '<div class="heatmap-month-labels">';
+  // Build both layouts in one pass
+  let horizMonthLabels = '<div class="heatmap-month-labels">';
+  let horizGrid = '<div class="heatmap-grid">';
+  let vertHtml = '';
   let currentMonth = -1;
-  dates.forEach(d => {
-    if (d.getMonth() !== currentMonth) {
-      currentMonth = d.getMonth();
-      html += `<span class="heatmap-month-label">${MONTHS[currentMonth]}</span>`;
-    }
-  });
-  html += '</div>';
+  let monthCells = [];
 
-  // Cells (flat grid)
-  html += '<div class="heatmap-grid">';
   dates.forEach(d => {
     const s = dateStr(d);
     const entry = dayMap[s];
@@ -1428,17 +1420,34 @@ function renderHistory() {
       if (frac >= 1)    level = 4;
     }
     const tip = entry ? `${d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'})}: ${entry.done}/${entry.total} habits` : d.toLocaleDateString('en',{month:'short',day:'numeric',year:'numeric'});
-    html += `<div class="heatmap-cell" data-level="${level}" title="${tip}"></div>`;
-  });
-  html += '</div>';
+    const cellHtml = `<div class="heatmap-cell" data-level="${level}" title="${tip}"></div>`;
 
-  // Legend
+    horizGrid += cellHtml;
+
+    if (d.getMonth() !== currentMonth) {
+      if (currentMonth >= 0) {
+        vertHtml += `<div class="hmv-row"><span class="hmv-month">${MONTHS[currentMonth]}</span><div class="hmv-cells">${monthCells.join('')}</div></div>`;
+      }
+      currentMonth = d.getMonth();
+      monthCells = [];
+      horizMonthLabels += `<span class="heatmap-month-label">${MONTHS[currentMonth]}</span>`;
+    }
+    monthCells.push(cellHtml);
+  });
+  if (currentMonth >= 0) {
+    vertHtml += `<div class="hmv-row"><span class="hmv-month">${MONTHS[currentMonth]}</span><div class="hmv-cells">${monthCells.join('')}</div></div>`;
+  }
+  horizMonthLabels += '</div>';
+  horizGrid += '</div>';
+
+  let html = '<div class="heatmap-content">';
+  html += `<div class="heatmap-horiz">${horizMonthLabels}${horizGrid}</div>`;
+  html += `<div class="heatmap-vert">${vertHtml}</div>`;
   html += '<div class="heatmap-legend">Less';
   for (let i = 0; i <= 4; i++) {
     html += `<span class="heatmap-legend-swatch l${i}"></span>`;
   }
   html += 'More</div>';
-
   html += '</div>'; // close heatmap-content
   wrap.innerHTML = html;
 

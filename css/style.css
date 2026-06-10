@@ -602,6 +602,16 @@ body::after {
 .heatmap-legend-swatch.l3 { background: color-mix(in srgb, var(--accent) 75%, var(--bg-card)); }
 .heatmap-legend-swatch.l4 { background: var(--accent); }
 
+/* Horizontal layout (desktop) */
+.heatmap-horiz { display: block; }
+
+/* Vertical layout (mobile) */
+.heatmap-vert { display: none; }
+.hmv-row { display: flex; align-items: center; gap: 4px; }
+.hmv-month { width: 28px; flex-shrink: 0; text-align: right; font-size: 0.6rem; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.04em; padding-right: 2px; }
+.hmv-cells { display: flex; gap: 2px; flex: 1; }
+.hmv-cells .heatmap-cell { flex: 1 1 0; min-width: 6px; }
+
 /* Empty state inside heatmap */
 .heatmap-empty { padding: 2rem 1rem !important; }
 
@@ -1539,6 +1549,6 @@ body::after {
 
 @media (max-width: 680px) {
   .score-mode-row { flex-wrap: wrap; }
-  .heatmap-grid { gap: 1px; padding: 0.5rem; }
-  .heatmap-month-labels { gap: 1px; }
+  .heatmap-horiz { display: none; }
+  .heatmap-vert { display: flex; flex-direction: column; gap: 3px; }
 }
