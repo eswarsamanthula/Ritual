@@ -552,7 +552,7 @@ body::after {
 .heatmap-month-labels {
   display: grid;
   grid-template-columns: repeat(53, 1fr);
-  gap: 2px;
+  gap: 3px;
   font-size: 0.6rem;
   color: var(--text-faint);
   text-transform: uppercase;
@@ -563,7 +563,7 @@ body::after {
 .heatmap-grid {
   display: grid;
   grid-template-columns: repeat(53, 1fr);
-  gap: 2px;
+  gap: 3px;
   background: var(--bg-subtle);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -572,7 +572,7 @@ body::after {
 .heatmap-cell {
   aspect-ratio: 1;
   border-radius: 2px;
-  background: var(--bg-subtle);
+  background: var(--bg-input);
   cursor: pointer;
   transition: all .15s ease;
 }
@@ -581,9 +581,9 @@ body::after {
   z-index: 5;
   box-shadow: 0 0 0 2px var(--bg-card);
 }
-.heatmap-cell[data-level="1"] { background: color-mix(in srgb, var(--accent) 30%, var(--bg-subtle)); }
-.heatmap-cell[data-level="2"] { background: color-mix(in srgb, var(--accent) 55%, var(--bg-subtle)); }
-.heatmap-cell[data-level="3"] { background: color-mix(in srgb, var(--accent) 75%, var(--bg-subtle)); }
+.heatmap-cell[data-level="1"] { background: color-mix(in srgb, var(--accent) 30%, var(--bg-card)); }
+.heatmap-cell[data-level="2"] { background: color-mix(in srgb, var(--accent) 55%, var(--bg-card)); }
+.heatmap-cell[data-level="3"] { background: color-mix(in srgb, var(--accent) 75%, var(--bg-card)); }
 .heatmap-cell[data-level="4"] { background: var(--accent); }
 
 /* Legend */
@@ -603,10 +603,10 @@ body::after {
   width: 10px; height: 10px;
   border-radius: 2px;
 }
-.heatmap-legend-swatch.l0 { background: var(--bg-subtle); }
-.heatmap-legend-swatch.l1 { background: color-mix(in srgb, var(--accent) 30%, var(--bg-subtle)); }
-.heatmap-legend-swatch.l2 { background: color-mix(in srgb, var(--accent) 55%, var(--bg-subtle)); }
-.heatmap-legend-swatch.l3 { background: color-mix(in srgb, var(--accent) 75%, var(--bg-subtle)); }
+.heatmap-legend-swatch.l0 { background: var(--bg-input); }
+.heatmap-legend-swatch.l1 { background: color-mix(in srgb, var(--accent) 30%, var(--bg-card)); }
+.heatmap-legend-swatch.l2 { background: color-mix(in srgb, var(--accent) 55%, var(--bg-card)); }
+.heatmap-legend-swatch.l3 { background: color-mix(in srgb, var(--accent) 75%, var(--bg-card)); }
 .heatmap-legend-swatch.l4 { background: var(--accent); }
 
 /* Empty state inside heatmap */
