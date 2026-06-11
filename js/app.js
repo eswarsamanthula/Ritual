@@ -1477,14 +1477,13 @@ async function ensureHeatmapData() {
   }
 }
 
-function renderHistory() {
+async function renderHistory() {
   const wrap = $('heatmap-wrap');
   if (!wrap) return;
 
-  // If heatmap data isn't loaded yet, load it once then render
   if (!state.yearLogs || !state._heatmapLoaded) {
-    ensureHeatmapData().then(() => renderHistory());
-    return;
+    await ensureHeatmapData();
+    if (!state.yearLogs || !state._heatmapLoaded) return;
   }
 
   // Compute target year
