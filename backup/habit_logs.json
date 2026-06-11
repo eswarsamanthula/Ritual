@@ -1,0 +1,119 @@
+﻿[
+    {
+        "id":  "37f12a68-e103-4cdf-89ae-ea5614be4d50",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "c486ab51-6959-4774-a766-c2b3cbe8fa7b",
+        "date":  "2026-06-10",
+        "value":  50,
+        "note":  null,
+        "logged_at":  "2026-06-10T06:21:46.921+00:00"
+    },
+    {
+        "id":  "9e71d2ba-ddb4-4709-8230-39f34865858d",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "9140341b-647f-4c78-8341-221eda5e10b5",
+        "date":  "2026-06-10",
+        "value":  60,
+        "note":  null,
+        "logged_at":  "2026-06-10T08:03:07.793+00:00"
+    },
+    {
+        "id":  "ac812507-d0f3-4a53-a4dd-482050e03e83",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "78785d45-1779-4f34-9d9c-f9ef9bf642be",
+        "date":  "2026-06-10",
+        "value":  8,
+        "note":  null,
+        "logged_at":  "2026-06-10T10:07:53.132+00:00"
+    },
+    {
+        "id":  "7b097807-2e59-42bb-b5f3-5e248f7d8e1a",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "79b2907e-b83f-4e3f-b477-a1bb9dab54a5",
+        "date":  "2026-06-10",
+        "value":  1,
+        "note":  null,
+        "logged_at":  "2026-06-10T11:59:53.241+00:00"
+    },
+    {
+        "id":  "36d5ab84-90d4-41c7-b500-c40525789c21",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "77d9dd93-b52e-4a59-a087-4f6c94cdb0f5",
+        "date":  "2026-06-10",
+        "value":  8,
+        "note":  null,
+        "logged_at":  "2026-06-10T13:53:57.085+00:00"
+    },
+    {
+        "id":  "38c92ad6-7e18-44c6-867d-2660fcc5bc1e",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "79b2907e-b83f-4e3f-b477-a1bb9dab54a5",
+        "date":  "2026-06-11",
+        "value":  1,
+        "note":  null,
+        "logged_at":  "2026-06-11T02:13:05.834+00:00"
+    },
+    {
+        "id":  "19907cf2-6a5f-46b9-89de-62dd139fb255",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "77d9dd93-b52e-4a59-a087-4f6c94cdb0f5",
+        "date":  "2026-06-11",
+        "value":  8,
+        "note":  null,
+        "logged_at":  "2026-06-11T02:13:16.748+00:00"
+    },
+    {
+        "id":  "1563dac7-164d-4f6f-8961-5d47055e3033",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "c486ab51-6959-4774-a766-c2b3cbe8fa7b",
+        "date":  "2026-06-11",
+        "value":  45,
+        "note":  null,
+        "logged_at":  "2026-06-11T09:38:09.974+00:00"
+    },
+    {
+        "id":  "aafdbcea-9170-43c7-bce9-7f5643842360",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "78785d45-1779-4f34-9d9c-f9ef9bf642be",
+        "date":  "2026-06-11",
+        "value":  8,
+        "note":  null,
+        "logged_at":  "2026-06-11T09:38:17.984+00:00"
+    },
+    {
+        "id":  "d5a9f888-d362-4bee-ab0b-fb58ff70c954",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "9140341b-647f-4c78-8341-221eda5e10b5",
+        "date":  "2026-06-11",
+        "value":  55,
+        "note":  null,
+        "logged_at":  "2026-06-11T11:21:42.812+00:00"
+    },
+    {
+        "id":  "c03754d1-46e6-4a12-801e-f65fc3140353",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "bada0575-0001-4a80-b9d7-513dd26dd3cc",
+        "date":  "2026-06-11",
+        "value":  1,
+        "note":  null,
+        "logged_at":  "2026-06-11T12:02:24.091+00:00"
+    },
+    {
+        "id":  "e6fa1ffd-d1c9-40a2-ade1-14f86d5ce43e",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "606354c4-c3f4-4aa6-a0ee-88519b8ea149",
+        "date":  "2026-06-11",
+        "value":  30,
+        "note":  null,
+        "logged_at":  "2026-06-11T12:03:09.761+00:00"
+    },
+    {
+        "id":  "ae19b8ba-71bc-4a42-84a6-e694ad3ed71c",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "habit_id":  "f0f79863-796c-4d7a-a5bd-215b0a427d01",
+        "date":  "2026-06-11",
+        "value":  65,
+        "note":  null,
+        "logged_at":  "2026-06-11T12:03:16.342+00:00"
+    }
+]

@@ -7,8 +7,19 @@ let _sb = null;
 let currentUser = null;
 let _channels = [];
 
+const _CACHE_V = '4'; // bump to clear all localStorage caches
+
 // ─── INIT ───────────────────────────────────────────────────
 function initSupabase() {
+  // Clear stale caches on version bump
+  if (localStorage.getItem('ritual_cache_v') !== _CACHE_V) {
+    cacheClear();
+    ['ritual_onboarding_done','ritual_logged_in','ritual_intentions','ritual_time_capsules',
+     'ritual_habit_goals','ritual_week_templates','ritual_rest_days','ritual_pairs','ritual_stacks',
+     'ritual_witness_settings','ritual_witness_notifs','ritual_streak_archaeology',
+     'ritual_today_notes','ritual_today_logs','ritual_habits','ritual_year_logs'].forEach(k => { try { localStorage.removeItem(k); } catch(_) {} });
+    localStorage.setItem('ritual_cache_v', _CACHE_V);
+  }
   if (SUPABASE_URL.includes('your-project.supabase.co')) return false;
   try {
     _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {

@@ -1,0 +1,546 @@
+﻿[
+    {
+        "id":  1,
+        "user_id":  "cb520122-be72-47e7-a68f-e36f2e4df5ba",
+        "key":  "groups",
+        "value":  [
+                      {
+                          "id":  "1780812219612",
+                          "name":  "Work",
+                          "color":  "#6ee7b7",
+                          "account_ids":  [
+
+                                          ]
+                      }
+                  ],
+        "updated_at":  "2026-06-07T06:03:40.012575+00:00"
+    },
+    {
+        "id":  7,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "prompts",
+        "value":  [
+
+                  ],
+        "updated_at":  "2026-06-08T09:06:02.452986+00:00"
+    },
+    {
+        "id":  2,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "groups",
+        "value":  [
+                      {
+                          "id":  "1780892155778",
+                          "name":  "Claude",
+                          "color":  "#6ee7b7",
+                          "account_ids":  [
+
+                                          ]
+                      },
+                      {
+                          "id":  "1780916299728",
+                          "name":  "ChatGPT",
+                          "color":  "#fca5a5",
+                          "account_ids":  [
+
+                                          ]
+                      }
+                  ],
+        "updated_at":  "2026-06-08T04:15:56.765616+00:00"
+    },
+    {
+        "id":  6,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "streak",
+        "value":  {
+                      "streak":  4,
+                      "history":  [
+                                      "2026-06-08",
+                                      "2026-06-09",
+                                      "2026-06-10",
+                                      "2026-06-11"
+                                  ],
+                      "lastLog":  "2026-06-11"
+                  },
+        "updated_at":  "2026-06-08T06:48:50.229087+00:00"
+    },
+    {
+        "id":  12,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "limitHitTimeline",
+        "value":  [
+                      {
+                          "date":  "2026-06-08T11:25:50.851Z",
+                          "note":  "",
+                          "email":  "happyhacker376@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "bec3a361-3477-4aed-9de4-7d51582f1d11"
+                      },
+                      {
+                          "date":  "2026-06-08T12:23:43.155Z",
+                          "note":  "",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "8ed46272-12f3-4638-96ff-84c8b6d5fb57"
+                      },
+                      {
+                          "date":  "2026-06-08T12:38:41.476Z",
+                          "note":  "Image",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "ChatGPT",
+                          "accountId":  "a33a1ad9-cedc-414f-90dc-1d5d83a63058"
+                      },
+                      {
+                          "date":  "2026-06-08T12:41:32.764Z",
+                          "note":  "",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "8ed46272-12f3-4638-96ff-84c8b6d5fb57"
+                      },
+                      {
+                          "date":  "2026-06-08T12:41:35.157Z",
+                          "note":  "",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "8ed46272-12f3-4638-96ff-84c8b6d5fb57"
+                      },
+                      {
+                          "date":  "2026-06-08T12:54:15.493Z",
+                          "note":  "Image",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "ChatGPT",
+                          "accountId":  "a33a1ad9-cedc-414f-90dc-1d5d83a63058"
+                      },
+                      {
+                          "date":  "2026-06-08T15:32:40.545Z",
+                          "note":  "",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "3e03e4de-501f-428a-83ad-7fc12ea3b0dd"
+                      },
+                      {
+                          "date":  "2026-06-08T15:32:40.551Z",
+                          "note":  "",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "3e03e4de-501f-428a-83ad-7fc12ea3b0dd"
+                      },
+                      {
+                          "date":  "2026-06-09T06:30:23.678Z",
+                          "note":  "",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "ChatGPT",
+                          "accountId":  "a33a1ad9-cedc-414f-90dc-1d5d83a63058"
+                      },
+                      {
+                          "date":  "2026-06-09T06:30:28.500Z",
+                          "note":  "",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "eea4f874-99e7-43c1-87c6-600a21d1ff55"
+                      },
+                      {
+                          "date":  "2026-06-09T06:30:32.190Z",
+                          "note":  "",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "8ed46272-12f3-4638-96ff-84c8b6d5fb57"
+                      },
+                      {
+                          "date":  "2026-06-09T06:38:23.856Z",
+                          "note":  "Code",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "3e03e4de-501f-428a-83ad-7fc12ea3b0dd"
+                      },
+                      {
+                          "date":  "2026-06-09T06:49:26.818Z",
+                          "note":  "",
+                          "email":  "app.limitless.ai@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "fa6bbcfe-b469-44a9-b8b1-97c7798be433"
+                      },
+                      {
+                          "date":  "2026-06-09T06:49:39.107Z",
+                          "note":  "Search",
+                          "email":  "seawars2005@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "a82a453e-2042-40f2-8f4a-25dcbd3e63b0"
+                      },
+                      {
+                          "date":  "2026-06-09T06:49:47.396Z",
+                          "note":  "",
+                          "email":  "happyhacker376@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "bec3a361-3477-4aed-9de4-7d51582f1d11"
+                      },
+                      {
+                          "date":  "2026-06-09T06:49:54.467Z",
+                          "note":  "",
+                          "email":  "eswarsamanthulas@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "04414578-78ac-4527-a0b7-64dc09a0690b"
+                      },
+                      {
+                          "date":  "2026-06-09T06:50:00.416Z",
+                          "note":  "",
+                          "email":  "krishnaraos78535@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "3e86ca3d-94a8-48ca-afcd-d220be6c57cf"
+                      },
+                      {
+                          "date":  "2026-06-10T04:22:27.208Z",
+                          "note":  "Code",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "eea4f874-99e7-43c1-87c6-600a21d1ff55"
+                      },
+                      {
+                          "date":  "2026-06-10T04:28:44.139Z",
+                          "note":  "",
+                          "email":  "seawars2005@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "a82a453e-2042-40f2-8f4a-25dcbd3e63b0"
+                      },
+                      {
+                          "date":  "2026-06-10T04:34:14.790Z",
+                          "note":  "",
+                          "email":  "krishnaraos78535@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "3e86ca3d-94a8-48ca-afcd-d220be6c57cf"
+                      },
+                      {
+                          "date":  "2026-06-10T06:30:10.251Z",
+                          "note":  "",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "8ed46272-12f3-4638-96ff-84c8b6d5fb57"
+                      },
+                      {
+                          "date":  "2026-06-10T07:45:09.220Z",
+                          "note":  "Message",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "3e03e4de-501f-428a-83ad-7fc12ea3b0dd"
+                      },
+                      {
+                          "date":  "2026-06-11T02:16:37.833Z",
+                          "note":  "",
+                          "email":  "app.limitless.ai@gmail.com",
+                          "platform":  "Claude",
+                          "accountId":  "fa6bbcfe-b469-44a9-b8b1-97c7798be433"
+                      }
+                  ],
+        "updated_at":  "2026-06-08T11:25:52.365717+00:00"
+    },
+    {
+        "id":  3,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "notifHistory",
+        "value":  [
+                      {
+                          "time":  "2026-06-11T06:39:06.363Z",
+                          "email":  "app.limitless.ai@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T09:40:00.862Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T09:25:41.891Z",
+                          "email":  "seawars2005@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T09:00:13.159Z",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T08:40:00.005Z",
+                          "email":  "krishnaraos78535@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T08:36:54.288Z",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.579Z",
+                          "email":  "krishnaraos78535@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.578Z",
+                          "email":  "eswarsamanthulas@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.577Z",
+                          "email":  "happyhacker376@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.577Z",
+                          "email":  "seawars2005@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.576Z",
+                          "email":  "app.limitless.ai@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.576Z",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.575Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.575Z",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-10T03:42:51.574Z",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "ChatGPT"
+                      },
+                      {
+                          "time":  "2026-06-09T11:06:01.746Z",
+                          "email":  "krishnaraos78535@gmail.com",
+                          "platform":  "stealthwriter"
+                      },
+                      {
+                          "time":  "2026-06-09T04:44:11.184Z",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-09T04:44:11.184Z",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "stealthwriter"
+                      },
+                      {
+                          "time":  "2026-06-09T04:44:11.183Z",
+                          "email":  "eswarsamanthulas@gmail.com",
+                          "platform":  "stealthwriter"
+                      },
+                      {
+                          "time":  "2026-06-08T15:40:00.273Z",
+                          "email":  "happyhacker376@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T14:56:15.917Z",
+                          "email":  "eswarsamanthulas@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T14:56:15.917Z",
+                          "email":  "seawars2005@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T12:55:00.005Z",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "ChatGPT"
+                      },
+                      {
+                          "time":  "2026-06-08T12:42:00.017Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T12:42:00.012Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T12:42:00.003Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T12:39:00.003Z",
+                          "email":  "eswarsamanthula02@gmail.com",
+                          "platform":  "ChatGPT"
+                      },
+                      {
+                          "time":  "2026-06-08T12:24:00.006Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T10:00:00.995Z",
+                          "email":  "happybr0434@gmail.com",
+                          "platform":  "Claude"
+                      },
+                      {
+                          "time":  "2026-06-08T04:34:10.256Z",
+                          "email":  "canyouknowme673@gmail.com",
+                          "platform":  "Claude"
+                      }
+                  ],
+        "updated_at":  "2026-06-08T04:34:11.688644+00:00"
+    },
+    {
+        "id":  13,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "messages",
+        "value":  [
+                      {
+                          "id":  "1780921266760",
+                          "tags":  [
+
+                                   ],
+                          "reply":  "Yes, several free tools. Organized by what they test:\n\n---\n\n**Performance \u0026 Core Web Vitals**\n\n- **Google PageSpeed Insights** — pagespeed.web.dev — free, no signup, gives LCP/CLS/FID scores + exact fix suggestions\n- **GTmetrix** — gtmetrix.com — waterfall chart, free tier, shows what\u0027s slow and why\n- **WebPageTest** — webpagetest.org — deep performance audit, free, shows render timeline visually\n\n---\n\n**Accessibility**\n\n- **WAVE** — wave.webaim.org — paste URL, highlights every accessibility error visually on the page itself\n- **axe DevTools** — Chrome extension, free tier — scans page in browser, lists WCAG violations with fix guidance\n- **Lighthouse** — built into Chrome DevTools (F12 → Lighthouse tab) — runs accessibility + performance + SEO + PWA audit in one click, no install needed\n\n---\n\n**SEO**\n\n- **Google Search Console** — free, official, tracks how Google sees your site\n- **Ahrefs Webmaster Tools** — free tier — site audit, broken links, missing meta tags\n- **Screaming Frog** — free up to 500 URLs — crawls like a search engine, finds every issue\n\n---\n\n**Cross-browser \u0026 Responsive**\n\n- **BrowserStack** (free trial) — real device testing\n- **Responsively App** — responsively.app — free desktop app, shows your site on 5 screen sizes simultaneously, best for responsive debugging\n- **Chrome DevTools device toolbar** — F12 → toggle device — good enough for most cases\n\n---\n\n**Security**\n\n- **Mozilla Observatory** — observatory.mozilla.org — scans headers, CSP, HTTPS config, gives A–F grade\n- **Security Headers** — securityheaders.com — checks HTTP response headers\n\n---\n\n**PWA Specific** (relevant for both your projects)\n\n- **Lighthouse** (again) — PWA audit built in, checks manifest, service worker, offline support\n- **PWA Builder** — pwabuilder.com — Microsoft\u0027s free tool, audits your PWA and generates missing assets\n\n---\n\n**Code Quality**\n\n- **ESLint** — free, local — JS linting, catches bugs before they happen\n- **Stylelint** — same but for CSS\n- **HTML Validator** — validator.w3.org — paste HTML, find syntax errors\n\n---\n\n**All-in-one starting point:**\n\nRun **Lighthouse** first (already in your browser, zero setup), then **PageSpeed Insights** for public URL scores, then **WAVE** for accessibility. Those three cover 80% of what matters and take 5 minutes total.\n\nFor your deployed game at `eswarsamanthula.github.io/pixel-blaster-dx/` — just paste the URL into PageSpeed Insights right now and it\u0027ll tell you everything broken.",
+                          "title":  "Review website Links",
+                          "prompt":  "Review website",
+                          "platform":  "Claude",
+                          "created_at":  "2026-06-08T12:21:06.760Z"
+                      }
+                  ],
+        "updated_at":  "2026-06-08T12:20:32.923426+00:00"
+    },
+    {
+        "id":  68,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "ritual_today_snapshot",
+        "value":  {
+                      "pct":  100,
+                      "done":  8,
+                      "total":  8,
+                      "streak":  2,
+                      "updatedAt":  "2026-06-11T12:03:17.376Z",
+                      "consistency":  100
+                  },
+        "updated_at":  "2026-06-10T06:21:17.368411+00:00"
+    },
+    {
+        "id":  17,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "email_alerts",
+        "value":  false,
+        "updated_at":  "2026-06-08T12:32:38.660852+00:00"
+    },
+    {
+        "id":  79,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "ritual_widget_on",
+        "value":  true,
+        "updated_at":  "2026-06-10T09:00:25.515926+00:00"
+    },
+    {
+        "id":  678,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "limitless_widget_on",
+        "value":  true,
+        "updated_at":  "2026-06-10T11:26:48.408963+00:00"
+    },
+    {
+        "id":  244,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "habit_stacks",
+        "value":  [
+
+                  ],
+        "updated_at":  "2026-06-10T11:01:57.647273+00:00"
+    },
+    {
+        "id":  2264,
+        "user_id":  "17b0e6c9-8d0d-4c11-813d-ee0d99c6c5aa",
+        "key":  "limitless_today_snapshot",
+        "value":  {
+                      "total":  1,
+                      "streak":  1,
+                      "available":  0,
+                      "updatedAt":  "2026-06-11T05:23:58.291Z",
+                      "healthScore":  0
+                  },
+        "updated_at":  "2026-06-11T05:21:39.947625+00:00"
+    },
+    {
+        "id":  1221,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "rest_days",
+        "value":  {
+
+                  },
+        "updated_at":  "2026-06-10T11:59:09.339685+00:00"
+    },
+    {
+        "id":  102,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "limitless_today_snapshot",
+        "value":  {
+                      "total":  10,
+                      "streak":  4,
+                      "available":  10,
+                      "updatedAt":  "2026-06-11T11:54:04.597Z",
+                      "healthScore":  100
+                  },
+        "updated_at":  "2026-06-10T10:30:11.079746+00:00"
+    },
+    {
+        "id":  2356,
+        "user_id":  "17b0e6c9-8d0d-4c11-813d-ee0d99c6c5aa",
+        "key":  "limitHitTimeline",
+        "value":  [
+                      {
+                          "date":  "2026-06-11T05:23:12.311Z",
+                          "note":  "Testing limit hit",
+                          "email":  "test@chatgpt.com",
+                          "platform":  "ChatGPT",
+                          "accountId":  "e82a3ce5-915b-4374-9e25-7c9415751a71"
+                      }
+                  ],
+        "updated_at":  "2026-06-11T05:23:12.970015+00:00"
+    },
+    {
+        "id":  2250,
+        "user_id":  "17b0e6c9-8d0d-4c11-813d-ee0d99c6c5aa",
+        "key":  "streak",
+        "value":  {
+                      "streak":  1,
+                      "history":  [
+                                      "2026-06-07",
+                                      "2026-06-11"
+                                  ],
+                      "lastLog":  "2026-06-11"
+                  },
+        "updated_at":  "2026-06-11T04:46:05.579557+00:00"
+    },
+    {
+        "id":  2252,
+        "user_id":  "17b0e6c9-8d0d-4c11-813d-ee0d99c6c5aa",
+        "key":  "ritual_widget_on",
+        "value":  false,
+        "updated_at":  "2026-06-11T04:46:20.177624+00:00"
+    },
+    {
+        "id":  4259,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "week_templates",
+        "value":  {
+
+                  },
+        "updated_at":  "2026-06-11T12:01:02.289637+00:00"
+    },
+    {
+        "id":  4260,
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "key":  "time_capsules",
+        "value":  {
+
+                  },
+        "updated_at":  "2026-06-11T12:01:02.684134+00:00"
+    }
+]

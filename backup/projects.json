@@ -1,0 +1,74 @@
+﻿[
+    {
+        "id":  "74de961f-ca85-48b2-8d12-e1f4cb521ec5",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Final Project phase 1",
+        "description":  null,
+        "color":  "#fca5a5",
+        "created_at":  "2026-06-06T03:28:03.739743+00:00"
+    },
+    {
+        "id":  "8e249c5e-fe9d-4667-a588-8a3aa31807fd",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Cloud Research paper",
+        "description":  null,
+        "color":  "#fcd34d",
+        "created_at":  "2026-06-06T03:27:54.150496+00:00"
+    },
+    {
+        "id":  "ca1b15af-6874-4309-9b96-f15945941c7f",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "PIXEL BLASTER DX",
+        "description":  null,
+        "color":  "#f9a8d4",
+        "created_at":  "2026-06-06T03:28:53.643055+00:00"
+    },
+    {
+        "id":  "4b247ae6-00a2-4b30-a2fb-4de6ab3a3084",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "StudyGenie-AI",
+        "description":  null,
+        "color":  "#6ee7b7",
+        "created_at":  "2026-06-06T03:29:09.688894+00:00"
+    },
+    {
+        "id":  "49a38f7a-31cb-4206-8d64-b62976cbaac6",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Dormsy",
+        "description":  null,
+        "color":  "#c4b5fd",
+        "created_at":  "2026-06-06T03:27:41.459113+00:00"
+    },
+    {
+        "id":  "9b044ee6-1c52-42f4-a592-f20d5c6979c8",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Weather",
+        "description":  null,
+        "color":  "#93c5fd",
+        "created_at":  "2026-06-06T03:28:17.463793+00:00"
+    },
+    {
+        "id":  "42600afd-17d6-4f09-8d45-e814cb176d37",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Eswar.Portfolio",
+        "description":  null,
+        "color":  "#6ee7b7",
+        "created_at":  "2026-06-06T03:32:31.094294+00:00"
+    },
+    {
+        "id":  "ac1b3bb4-e96c-49df-8409-86ad48ac3977",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Huashu design repository overview",
+        "description":  null,
+        "color":  "#6ee7b7",
+        "created_at":  "2026-06-09T05:57:38.386325+00:00"
+    },
+    {
+        "id":  "97089d5f-865e-42fc-b3e0-6af7f5d179a2",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "name":  "Limitless \u0026 Ritual",
+        "description":  null,
+        "color":  "#6ee7b7",
+        "created_at":  "2026-06-06T03:24:55.858597+00:00"
+    }
+]

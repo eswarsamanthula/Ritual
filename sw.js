@@ -1,11 +1,10 @@
-const CACHE = 'ritual-v3';
+const CACHE = 'ritual-v4';
 const ASSETS = [
-  '/', '/index.html?v=3',
-  '/js/app.js?v=3', '/js/db.js?v=3', '/js/config.js?v=3', '/js/notifications.js?v=3',
-  '/css/style.css?v=3',
-  '/icons/icon-192.png?v=3', '/icons/icon-512.png?v=3',
-  '/manifest.json?v=3',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+  '/', '/index.html?v=4',
+  '/js/supabase.js?v=4', '/js/app.js?v=4', '/js/db.js?v=4', '/js/config.js?v=4', '/js/notifications.js?v=4',
+  '/css/style.css?v=4',
+  '/icons/icon-192.png?v=4', '/icons/icon-512.png?v=4',
+  '/manifest.json?v=4',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap',
 ];
 
@@ -32,12 +31,10 @@ self.addEventListener('fetch', e => {
   const { request } = e;
   const url = new URL(request.url);
 
-  // Supabase API — network only
   if (url.hostname.includes('supabase.co')) {
     return;
   }
 
-  // Google Fonts stylesheet — cache-first
   if (url.hostname === 'fonts.googleapis.com') {
     e.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(res => {
@@ -49,7 +46,6 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Static assets — cache-first
   if (url.hostname === 'cdn.jsdelivr.net' || url.href.startsWith(self.location.origin)) {
     e.respondWith(
       caches.match(request).then(cached => cached || fetch(request).then(res => {

@@ -1,0 +1,213 @@
+﻿[
+    {
+        "id":  "bec3a361-3477-4aed-9de4-7d51582f1d11",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "happyhacker376@gmail.com",
+        "account_type":  "free",
+        "project_id":  "42600afd-17d6-4f09-8d45-e814cb176d37",
+        "note":  null,
+        "limit_hit_at":  "2026-06-09T06:49:46.793+00:00",
+        "reset_at":  "2026-06-09T12:49:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-06T03:27:09.503387+00:00",
+        "project_ids":  [
+                            "42600afd-17d6-4f09-8d45-e814cb176d37",
+                            "74de961f-ca85-48b2-8d12-e1f4cb521ec5"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "04414578-78ac-4527-a0b7-64dc09a0690b",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "eswarsamanthulas@gmail.com",
+        "account_type":  "free",
+        "project_id":  null,
+        "note":  null,
+        "limit_hit_at":  "2026-06-09T06:49:53.819+00:00",
+        "reset_at":  "2026-06-09T09:49:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-06T03:25:49.930744+00:00",
+        "project_ids":  [
+                            "74de961f-ca85-48b2-8d12-e1f4cb521ec5",
+                            "8e249c5e-fe9d-4667-a588-8a3aa31807fd"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "79dda772-3ef5-4b19-9d8f-cf20941d190f",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "ChatGPT",
+        "email":  "eswarsamanthulas@gmail.com",
+        "account_type":  "Go",
+        "project_id":  null,
+        "note":  null,
+        "limit_hit_at":  null,
+        "reset_at":  null,
+        "limit_note":  null,
+        "created_at":  "2026-06-10T03:54:49.760369+00:00",
+        "project_ids":  [
+
+                        ],
+        "price":  0,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "eea4f874-99e7-43c1-87c6-600a21d1ff55",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "eswarsamanthula02@gmail.com",
+        "account_type":  "free",
+        "project_id":  null,
+        "note":  null,
+        "limit_hit_at":  "2026-06-10T04:22:25.484+00:00",
+        "reset_at":  "2026-06-10T09:00:00+00:00",
+        "limit_note":  "Code",
+        "created_at":  "2026-06-06T03:26:05.295823+00:00",
+        "project_ids":  [
+                            "9b044ee6-1c52-42f4-a592-f20d5c6979c8",
+                            "74de961f-ca85-48b2-8d12-e1f4cb521ec5",
+                            "97089d5f-865e-42fc-b3e0-6af7f5d179a2"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "a82a453e-2042-40f2-8f4a-25dcbd3e63b0",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "seawars2005@gmail.com",
+        "account_type":  "free",
+        "project_id":  "97089d5f-865e-42fc-b3e0-6af7f5d179a2",
+        "note":  null,
+        "limit_hit_at":  "2026-06-10T04:28:42.35+00:00",
+        "reset_at":  "2026-06-10T09:20:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-06T03:26:35.624286+00:00",
+        "project_ids":  [
+                            "ca1b15af-6874-4309-9b96-f15945941c7f",
+                            "74de961f-ca85-48b2-8d12-e1f4cb521ec5",
+                            "97089d5f-865e-42fc-b3e0-6af7f5d179a2"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "3e86ca3d-94a8-48ca-afcd-d220be6c57cf",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "krishnaraos78535@gmail.com",
+        "account_type":  "free",
+        "project_id":  "97089d5f-865e-42fc-b3e0-6af7f5d179a2",
+        "note":  null,
+        "limit_hit_at":  "2026-06-10T04:34:12.787+00:00",
+        "reset_at":  "2026-06-10T08:40:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-06T03:25:31.278314+00:00",
+        "project_ids":  [
+                            "ac1b3bb4-e96c-49df-8409-86ad48ac3977",
+                            "4b247ae6-00a2-4b30-a2fb-4de6ab3a3084",
+                            "97089d5f-865e-42fc-b3e0-6af7f5d179a2"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "8ed46272-12f3-4638-96ff-84c8b6d5fb57",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "canyouknowme673@gmail.com",
+        "account_type":  "free",
+        "project_id":  "49a38f7a-31cb-4206-8d64-b62976cbaac6",
+        "note":  null,
+        "limit_hit_at":  "2026-06-10T06:30:09.882+00:00",
+        "reset_at":  "2026-06-10T09:40:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-06T03:27:20.952959+00:00",
+        "project_ids":  [
+                            "74de961f-ca85-48b2-8d12-e1f4cb521ec5",
+                            "49a38f7a-31cb-4206-8d64-b62976cbaac6",
+                            "97089d5f-865e-42fc-b3e0-6af7f5d179a2"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "3e03e4de-501f-428a-83ad-7fc12ea3b0dd",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "happybr0434@gmail.com",
+        "account_type":  "free",
+        "project_id":  "9b044ee6-1c52-42f4-a592-f20d5c6979c8",
+        "note":  null,
+        "limit_hit_at":  "2026-06-10T07:45:08.782+00:00",
+        "reset_at":  "2026-06-10T08:30:00+00:00",
+        "limit_note":  "Message",
+        "created_at":  "2026-06-06T03:26:23.81418+00:00",
+        "project_ids":  [
+                            "9b044ee6-1c52-42f4-a592-f20d5c6979c8",
+                            "8e249c5e-fe9d-4667-a588-8a3aa31807fd"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "fa6bbcfe-b469-44a9-b8b1-97c7798be433",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "Claude",
+        "email":  "app.limitless.ai@gmail.com",
+        "account_type":  "free",
+        "project_id":  null,
+        "note":  null,
+        "limit_hit_at":  "2026-06-11T02:16:37.065+00:00",
+        "reset_at":  "2026-06-11T05:16:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-06T07:03:36.129545+00:00",
+        "project_ids":  [
+                            "97089d5f-865e-42fc-b3e0-6af7f5d179a2"
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    },
+    {
+        "id":  "a33a1ad9-cedc-414f-90dc-1d5d83a63058",
+        "user_id":  "a8312405-9f57-4c40-b94e-0ce774f93c3b",
+        "platform":  "ChatGPT",
+        "email":  "eswarsamanthula02@gmail.com",
+        "account_type":  "free",
+        "project_id":  null,
+        "note":  null,
+        "limit_hit_at":  "2026-06-09T06:30:22.729+00:00",
+        "reset_at":  "2026-06-09T09:30:00+00:00",
+        "limit_note":  null,
+        "created_at":  "2026-06-08T10:53:07.884822+00:00",
+        "project_ids":  [
+
+                        ],
+        "price":  null,
+        "group_ids":  [
+
+                      ]
+    }
+]
