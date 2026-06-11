@@ -804,14 +804,9 @@ function renderStreakBadge() {
   const badge = $('sidebar-streak-badge');
   const countEl = $('sidebar-streak-count');
   if (!badge) return;
-
   const bestStreak = state.habits.reduce((best, h) => Math.max(best, calcStreak(h.id)), 0);
-  if (bestStreak > 0) {
-    countEl.textContent = bestStreak;
-    badge.classList.remove('hidden');
-  } else {
-    badge.classList.add('hidden');
-  }
+  countEl.textContent = bestStreak;
+  badge.classList.remove('hidden');
 }
 
 // ─── STACKS CRUD ────────────────────────────────────────────
