@@ -693,6 +693,29 @@
   </div>
 </div>
 
+<!-- DAY CLOSE MODAL -->
+<div id="modal-dayclose" class="modal-backdrop modal-dayclose-backdrop" role="dialog" aria-modal="true" aria-labelledby="dayclose-title">
+  <div class="modal-dayclose">
+    <div class="dayclose-particles" id="dayclose-particles"></div>
+    <div class="dayclose-date" id="dayclose-date"></div>
+    <div class="dayclose-seal">
+      <svg width="80" height="80" viewBox="0 0 80 80" aria-hidden="true">
+        <g class="dayclose-seal-ring">
+          <circle cx="40" cy="40" r="37" fill="none" stroke="var(--accent)" stroke-width="0.75" stroke-dasharray="5 7" opacity="0.3"/>
+          <circle cx="40" cy="40" r="31" fill="none" stroke="var(--accent)" stroke-width="0.4" opacity="0.15"/>
+        </g>
+      </svg>
+      <span class="dayclose-seal-glyph">◎</span>
+    </div>
+    <h2 class="dayclose-title" id="dayclose-title">Day sealed.</h2>
+    <p class="dayclose-sub" id="dayclose-sub">All rituals complete</p>
+    <div class="dayclose-stats" id="dayclose-stats"></div>
+    <div class="dayclose-chips" id="dayclose-chips"></div>
+    <p class="dayclose-quote" id="dayclose-quote"></p>
+    <button class="dayclose-btn" onclick="closeDayClose()">◎ &nbsp;Seal the day</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 

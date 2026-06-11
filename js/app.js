@@ -1970,13 +1970,87 @@ function checkStreakMilestones() {
 
 function checkPerfectDay() {
   if (_perfectDayFired) return;
-  const total = state.habits.length;
+  const total = state.habits.filter(h => isActiveToday(h.id) && !isRestDay(h.id)).length;
   if (total === 0) return;
   const done = state.habits.filter(h => isHabitComplete(h)).length;
-  if (done === total) {
+  if (done >= total) {
     _perfectDayFired = true;
-    setTimeout(() => fireConfetti(null, null, 80), 500);
+    setTimeout(() => openDayClose(), 600);
   }
+}
+
+// ─── DAY CLOSE CEREMONY ───────────────────────────────────────
+const _dayCloseQuotes = [
+  "Small disciplines repeated with consistency every day lead to great achievements gained slowly over time.",
+  "We are what we repeatedly do. Excellence, then, is not an act but a habit.",
+  "The secret of your future is hidden in your daily routine.",
+  "Motivation gets you going, but discipline keeps you growing.",
+  "Success is the sum of small efforts, repeated day in and day out.",
+  "Each day is a small life. Live it fully.",
+  "You don't rise to the level of your goals — you fall to the level of your systems.",
+  "The chains of habit are too light to be felt until they are too heavy to be broken.",
+];
+
+function openDayClose() {
+  const today = new Date();
+  const dateLabel = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  const activeHabits = state.habits.filter(h => isActiveToday(h.id) && !isRestDay(h.id));
+  const doneHabits   = activeHabits.filter(h => isHabitComplete(h));
+  const longestStreak = Math.max(0, ...state.habits.map(h => calcStreak(h.id)));
+  const pct = activeHabits.length > 0 ? Math.round((doneHabits.length / activeHabits.length) * 100) : 100;
+
+  $('dayclose-date').textContent = dateLabel;
+  $('dayclose-stats').innerHTML = [
+    { num: doneHabits.length, lbl: 'Habits done' },
+    { num: longestStreak + 'd', lbl: 'Best streak' },
+    { num: pct + '%', lbl: 'Score' },
+  ].map(s => `<div class="dayclose-stat"><div class="dayclose-stat-num">${s.num}</div><div class="dayclose-stat-lbl">${s.lbl}</div></div>`).join('');
+
+  $('dayclose-chips').innerHTML = doneHabits
+    .map((h, i) => `<span class="dayclose-chip" style="animation-delay:${i * 0.07}s">${escHtml(h.icon)} ${escHtml(h.name)}</span>`)
+    .join('');
+
+  $('dayclose-quote').textContent = '\u201c' + _dayCloseQuotes[today.getDate() % _dayCloseQuotes.length] + '\u201d';
+
+  _spawnDayCloseParticles();
+  openModal('modal-dayclose');
+  fireConfetti(null, null, 90);
+}
+
+function closeDayClose() {
+  closeModal('modal-dayclose');
+  _stopDayCloseParticles();
+}
+
+let _dcParticleTimer = null;
+const _dcColors = ['#7fb685','#f0c96e','#89b4c9','#c49ac4','#e8a87c','#b5c987','#e07b7b'];
+
+function _spawnDayCloseParticles() {
+  _stopDayCloseParticles();
+  const container = $('dayclose-particles');
+  if (!container) return;
+  container.innerHTML = '';
+  function spawn() {
+    const el = document.createElement('div');
+    el.className = 'dayclose-particle';
+    el.style.cssText = [
+      `left:${Math.random() * 100}%`,
+      `background:${_dcColors[Math.floor(Math.random() * _dcColors.length)]}`,
+      `animation-duration:${1.6 + Math.random() * 1.8}s`,
+      `animation-delay:${Math.random() * 0.8}s`,
+      `width:${4 + Math.random() * 5}px`,
+      `height:${3 + Math.random() * 3}px`,
+    ].join(';');
+    container.appendChild(el);
+    if (container.children.length > 28) container.firstElementChild?.remove();
+  }
+  for (let i = 0; i < 20; i++) spawn();
+  _dcParticleTimer = setInterval(spawn, 280);
+}
+
+function _stopDayCloseParticles() {
+  if (_dcParticleTimer) { clearInterval(_dcParticleTimer); _dcParticleTimer = null; }
 }
 
 // ─── PULL-TO-REFRESH ───────────────────────────────────────────
