@@ -400,7 +400,8 @@ async function showApp(user) {
             if (userData.habit_stacks) state.stacks = userData.habit_stacks;
           } catch (_) {}
         }
-        renderView();
+        // Only re-render live views on sync; skip expensive views (history, stats etc.)
+        if (state.currentView === 'today') renderToday();
       } finally {
         _rtBusy = false;
       }
