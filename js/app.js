@@ -3611,7 +3611,7 @@ async function handleTimeSuggestion(habitId, newTime) {
 // ═══════════════════════════════════════════════════════════════
 
 const RITUAL_EXPORT_COLS = ['id','user_id','name','icon','type','target','unit','time_of_day','color','sort_order','created_at'];
-const RITUAL_LOG_COLS = ['id','user_id','habit_id','log_date','value','note','created_at'];
+const RITUAL_LOG_COLS = ['id','user_id','habit_id','log_date','value','note'];
 const RITUAL_SIG = ['name','icon','type','target','unit'];
 
 function _dl(text, name, mime) {
@@ -3626,7 +3626,7 @@ function _dl(text, name, mime) {
 async function exportRitualCSV() {
   try {
     const habits = await _fetchAll('habits');
-    const logs = await _fetchAll('habit_logs');
+    const logs = await _fetchAll('habit_logs', 'log_date');
     _dl(_csv(habits, RITUAL_EXPORT_COLS), 'ritual_habits.csv', 'text/csv');
     _dl(_csv(logs, RITUAL_LOG_COLS), 'ritual_habit_logs.csv', 'text/csv');
     showToast('Downloaded: ritual_habits.csv + ritual_habit_logs.csv');
@@ -3637,7 +3637,7 @@ async function exportRitualXLSX() {
   try {
     if (typeof XLSX === 'undefined') { showToast('Loading SheetJS…'); return; }
     const habits = await _fetchAll('habits');
-    const logs = await _fetchAll('habit_logs');
+    const logs = await _fetchAll('habit_logs', 'log_date');
     const wb = XLSX.utils.book_new();
     wb.SheetNames.push('Habits');
     wb.Sheets['Habits'] = XLSX.utils.json_to_sheet(habits.map(r => _pick(r, RITUAL_EXPORT_COLS)));
@@ -3752,10 +3752,10 @@ function _parseXLSX(buf) {
   return rows;
 }
 
-async function _fetchAll(table) {
+async function _fetchAll(table, orderCol = 'created_at') {
   const sb = window.__sb;
   if (!sb || !currentUser) throw new Error('Not authenticated');
-  const { data, error } = await sb.from(table).select('*').eq('user_id', currentUser.id).order('created_at');
+  const { data, error } = await sb.from(table).select('*').eq('user_id', currentUser.id).order(orderCol);
   if (error) throw error;
   return data || [];
 }
