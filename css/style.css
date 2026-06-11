@@ -1615,7 +1615,7 @@ body::before {
   gap: 1rem; background: var(--bg);
   transition: opacity .4s ease;
 }
-.loading-screen.hidden { opacity: 0; pointer-events: none; }
+.loading-screen.hidden { opacity: 0; pointer-events: none; visibility: hidden; }
 .loading-spinner {
   width: 36px; height: 36px;
   border: 2px solid var(--border); border-top-color: var(--accent);
