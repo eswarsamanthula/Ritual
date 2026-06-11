@@ -32,6 +32,10 @@ const state = {
   intentions: {},  // { [date]: { morning: string, evening: string, evening_answered: boolean } }
   streakArchaeology: {}, // { [habitId]: { longest_streak, longest_start, longest_end, break_date, break_reason } }
   editingGoalHabitId: null, // for goal modal
+  // Witness Mode
+  witnessSettings: { mode_on: true, my_witness: { user_id: null, name: '', email: '', status: 'none' }, witness_requests: [], i_witness: [], last_notified_date: '', notifications: [] },
+  witnessNotifs: [],
+  _witnessUserName: '',
 };
 
 let _showAppGuard = false;
@@ -371,11 +375,25 @@ async function showApp(user) {
       if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
       if (userData.intentions) state.intentions = userData.intentions;
       if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
+      if (userData.witness_settings) state.witnessSettings = userData.witness_settings;
+      else state.witnessSettings = { mode_on: true, my_witness: { user_id: null, name: '', email: '', status: 'none' }, witness_requests: [], i_witness: [], last_notified_date: '', notifications: [] };
     } catch (_) {}
   }
 
   // Fallback: query accounts directly if snapshot missing
   if (!state.limitlessSnapshot) await fetchLimitlessFallback();
+
+  // Witness Mode: set username + subscribe broadcast + restore persisted notifications
+  state._witnessUserName = currentUser?.user_metadata?.name || currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || 'Someone';
+  try { state.witnessNotifs = JSON.parse(localStorage.getItem('ritual_witness_notifs') || '[]'); } catch (_) { state.witnessNotifs = []; }
+  updateBellDot();
+
+  if (typeof subscribeWitnessBroadcast === 'function') {
+    subscribeWitnessBroadcast(currentUser.id,
+      (payload) => addWitnessNotification(payload),
+      () => { if (typeof loadAll === 'function') loadAll({ silent: true }); }
+    );
+  }
 
   renderView();
   initNotifications();
@@ -413,6 +431,7 @@ async function showApp(user) {
             if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
             if (userData.intentions) state.intentions = userData.intentions;
             if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
+            if (userData.witness_settings) state.witnessSettings = userData.witness_settings;
           } catch (_) {}
         }
         // Only re-render live views on sync; skip expensive views (history, stats etc.)
@@ -461,6 +480,7 @@ async function loadAll(opts = {}) {
         if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
         if (userData.intentions) state.intentions = userData.intentions;
         if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
+        if (userData.witness_settings) state.witnessSettings = userData.witness_settings;
       } catch (_) {}
     }
     $('offline-banner')?.classList.add('hidden');
@@ -490,7 +510,7 @@ function switchView(view) {
   $(`view-${view}`)?.classList.add('active');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-  const titles = { today: 'Today', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings', correlations: 'Correlations' };
+  const titles = { today: 'Today', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings', correlations: 'Correlations', witness: 'Witness' };
   $('view-title').textContent = titles[view] || view;
   renderView();
 }
@@ -504,6 +524,7 @@ function renderView() {
   else if (state.currentView === 'habits') renderHabitsList();
   else if (state.currentView === 'settings') renderSettings();
   else if (state.currentView === 'correlations') renderCorrelationsView();
+  else if (state.currentView === 'witness') renderWitnessView();
   updateSyncBadge();
 }
 
@@ -1356,6 +1377,14 @@ function renderSettings() {
     lt.textContent = state.limitlessWidgetOn ? 'ON' : 'OFF';
     lt.className = state.limitlessWidgetOn ? 'widget-toggle-btn' : 'widget-toggle-btn off';
   }
+
+  // Witness mode toggle + detail
+  const wmBtn = $('witness-mode-btn');
+  if (wmBtn) {
+    wmBtn.textContent = state.witnessSettings.mode_on ? 'ON' : 'OFF';
+    wmBtn.className = state.witnessSettings.mode_on ? 'widget-toggle-btn' : 'widget-toggle-btn off';
+  }
+  renderWitnessSettingsDetail();
 }
 
 // ─── EXPORT ──────────────────────────────────────────────────
@@ -2803,6 +2832,330 @@ function renderCorrelationsInner(container) {
   }).join('');
 }
 
+// ═══════════════════════════════════════════════════════════════
+//  WITNESS MODE
+// ═══════════════════════════════════════════════════════════════
+
+function getWitnessStorage() {
+  try { return JSON.parse(localStorage.getItem('ritual_witness_notifs') || '[]'); } catch { return []; }
+}
+function setWitnessStorage(n) {
+  localStorage.setItem('ritual_witness_notifs', JSON.stringify(n));
+}
+
+function updateBellDot() {
+  const dot = $('bell-dot');
+  if (!dot) return;
+  const hasUnread = state.witnessNotifs.length > 0;
+  dot.classList.toggle('hidden', !hasUnread);
+}
+
+function addWitnessNotification(payload) {
+  const n = {
+    id: Date.now().toString(),
+    from_name: payload.from_name || 'Someone',
+    habit_name: payload.habit_name || 'a habit',
+    streak: payload.streak || 0,
+    ts: Date.now(),
+  };
+  state.witnessNotifs.unshift(n);
+  if (state.witnessNotifs.length > 50) state.witnessNotifs = state.witnessNotifs.slice(0, 50);
+  setWitnessStorage(state.witnessNotifs);
+  updateBellDot();
+  if ($('notif-list')) renderWitnessNotifications();
+  showToast(`🕯 ${n.from_name} is about to skip — ${n.habit_name}`);
+}
+
+function dismissWitnessNotif(id) {
+  state.witnessNotifs = state.witnessNotifs.filter(n => n.id !== id);
+  setWitnessStorage(state.witnessNotifs);
+  updateBellDot();
+  renderWitnessNotifications();
+}
+
+function clearWitnessNotifs() {
+  state.witnessNotifs = [];
+  setWitnessStorage(state.witnessNotifs);
+  updateBellDot();
+  renderWitnessNotifications();
+}
+
+function renderWitnessNotifications() {
+  const list = $('notif-list');
+  if (!list) return;
+  if (state.witnessNotifs.length === 0) {
+    list.innerHTML = '<div class="notif-empty">No witness notifications yet</div>';
+    return;
+  }
+  list.innerHTML = state.witnessNotifs.map(n => {
+    const time = new Date(n.ts).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return `<div class="notif-item">
+      <span class="notif-dot" style="background:var(--amber)"></span>
+      <div class="notif-item-body">
+        <div class="notif-item-title">🕯 ${escHtml(n.from_name)} is about to skip — ${escHtml(n.habit_name)}</div>
+        <div class="notif-item-sub">${n.streak > 0 ? 'On a ' + n.streak + '-day streak' : ''}</div>
+        <div class="notif-item-time">${time}</div>
+      </div>
+      <button class="notif-dismiss-btn" onclick="dismissWitnessNotif('${n.id}')" title="Dismiss">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function saveWitnessSettings() {
+  try { await setUserData('witness_settings', state.witnessSettings); } catch (_) {}
+}
+
+function renderWitnessView() {
+  const wrap = $('witness-content');
+  if (!wrap) return;
+  const ws = state.witnessSettings;
+  let html = '';
+
+  // Mode toggle
+  html += `<div class="witness-card">
+    <div class="witness-toggle-row">
+      <div>
+        <div class="witness-toggle-label">Witness Mode</div>
+        <div class="witness-toggle-sub">When ON, your witness will know when you're about to skip</div>
+      </div>
+      <button class="widget-toggle-btn ${ws.mode_on ? '' : 'off'}" id="witness-mode-view-btn">${ws.mode_on ? 'ON' : 'OFF'}</button>
+    </div>
+  </div>`;
+
+  // My Witness
+  html += `<div class="witness-card">
+    <div class="witness-card-header">
+      <span class="witness-card-title">👁 My Witness</span>
+    </div>`;
+  if (ws.my_witness.user_id) {
+    const statusLabel = ws.my_witness.status === 'accepted' ? 'Accepted' : ws.my_witness.status === 'pending' ? 'Pending...' : ws.my_witness.status === 'declined' ? 'Declined' : 'None';
+    const statusClass = ws.my_witness.status === 'accepted' ? 'accepted' : ws.my_witness.status === 'pending' ? 'pending' : 'declined';
+    html += `<div class="witness-card-body">
+      <div class="witness-row">
+        <span class="witness-label">Name</span>
+        <span class="witness-value">${escHtml(ws.my_witness.name)}</span>
+      </div>
+      <div class="witness-row">
+        <span class="witness-label">Email</span>
+        <span class="witness-value">${escHtml(ws.my_witness.email)}</span>
+      </div>
+      <div class="witness-row">
+        <span class="witness-label">Status</span>
+        <span class="witness-status ${statusClass}">${statusLabel}</span>
+      </div>`;
+    if (ws.my_witness.status === 'accepted') {
+      html += `<div style="margin-top:0.5rem"><button class="btn-ghost small" onclick="handleRemoveWitness()" style="color:var(--red)">Remove witness</button></div>`;
+    }
+    html += `</div>`;
+  } else {
+    html += `<div class="witness-card-body">
+      <div class="witness-row">
+        <span class="witness-label">Status</span>
+        <span class="witness-value" style="color:var(--text-faint)">No witness set</span>
+      </div>
+    </div>`;
+  }
+  // Email search
+  html += `<div style="margin-top:0.5rem;display:flex;gap:0.5rem">
+    <input type="email" class="witness-email-input" id="witness-email-input" placeholder="Enter email to find your witness..." />
+    <button class="btn-primary small" id="witness-send-request-btn">Send Request</button>
+  </div>`;
+  html += `</div>`;
+
+  // Incoming Requests
+  const requests = ws.witness_requests || [];
+  html += `<div class="witness-card">
+    <div class="witness-card-header">
+      <span class="witness-card-title">📨 Incoming Requests</span>
+    </div>
+    <div class="witness-card-body">`;
+  if (requests.length === 0) {
+    html += `<div class="witness-empty">No incoming requests</div>`;
+  } else {
+    requests.forEach(r => {
+      html += `<div class="witness-request-item">
+        <div class="witness-request-info">
+          <div class="witness-request-name">${escHtml(r.from_name)}</div>
+          <div class="witness-request-email">${escHtml(r.from_email)}</div>
+        </div>
+        <div class="witness-request-actions">
+          <button class="witness-accept-btn" onclick="handleAcceptWitness('${r.id}')">Accept</button>
+          <button class="witness-decline-btn" onclick="handleDeclineWitness('${r.id}')">Decline</button>
+        </div>
+      </div>`;
+    });
+  }
+  html += `</div></div>`;
+
+  // People I Witness
+  const iWitness = ws.i_witness || [];
+  html += `<div class="witness-card">
+    <div class="witness-card-header">
+      <span class="witness-card-title">👤 People I Witness</span>
+    </div>
+    <div class="witness-card-body">`;
+  if (iWitness.length === 0) {
+    html += `<div class="witness-empty">No one yet. When someone sets you as their witness and you accept, they'll appear here.</div>`;
+  } else {
+    iWitness.forEach(p => {
+      html += `<div class="witness-i-item">
+        <span class="witness-i-name">${escHtml(p.name)}</span>
+        <span class="witness-i-email">${escHtml(p.email)}</span>
+      </div>`;
+    });
+  }
+  html += `</div></div>`;
+
+  wrap.innerHTML = html;
+
+  // Bind events
+  setTimeout(() => {
+    const modeBtn = $('witness-mode-view-btn');
+    if (modeBtn) modeBtn.addEventListener('click', toggleWitnessMode);
+    const sendBtn = $('witness-send-request-btn');
+    if (sendBtn) sendBtn.addEventListener('click', handleSendWitnessRequest);
+    const emailInput = $('witness-email-input');
+    if (emailInput) emailInput.addEventListener('keydown', e => { if (e.key === 'Enter') handleSendWitnessRequest(); });
+  }, 50);
+}
+
+function toggleWitnessMode() {
+  state.witnessSettings.mode_on = !state.witnessSettings.mode_on;
+  saveWitnessSettings();
+  renderWitnessView();
+  // Also update settings section if visible
+  const modeBtn = $('witness-mode-btn');
+  if (modeBtn) {
+    modeBtn.textContent = state.witnessSettings.mode_on ? 'ON' : 'OFF';
+    modeBtn.className = state.witnessSettings.mode_on ? 'widget-toggle-btn' : 'widget-toggle-btn off';
+  }
+  showToast(state.witnessSettings.mode_on ? 'Witness Mode ON' : 'Witness Mode OFF');
+}
+
+async function handleSendWitnessRequest() {
+  const input = $('witness-email-input');
+  if (!input) return;
+  const email = input.value.trim();
+  if (!email) { showToast('Enter an email'); return; }
+
+  if (email === currentUser?.email) { showToast('Cannot witness yourself'); return; }
+
+  try {
+    const user = await lookupUserByEmail(email);
+    if (!user) { showToast('User not found — they need a Ritual account'); return; }
+
+    const result = await sendWitnessRequest(
+      email,
+      currentUser.id,
+      state._witnessUserName,
+      currentUser.email || ''
+    );
+
+    if (result?.success) {
+      showToast('Request sent ✓');
+      // Reload to reflect new state
+      await loadAll({ silent: true });
+      renderWitnessView();
+    } else {
+      showToast(result?.error || 'Failed to send request');
+    }
+  } catch (e) {
+    showToast('Error: ' + (e.message || 'Failed'));
+  }
+}
+
+async function handleAcceptWitness(requestId) {
+  try {
+    const result = await acceptWitnessRequest(requestId, currentUser.id);
+    if (result?.success) {
+      showToast('Request accepted ✓');
+      await loadAll({ silent: true });
+      renderWitnessView();
+      // Broadcast to sender that their request was accepted
+      const req = state.witnessSettings.witness_requests?.find(r => r.id === requestId);
+      if (req?.from_user_id && typeof broadcastWitnessRequestUpdate === 'function') {
+        broadcastWitnessRequestUpdate(req.from_user_id);
+      }
+    } else {
+      showToast(result?.error || 'Failed to accept');
+    }
+  } catch (e) {
+    showToast('Error: ' + (e.message || 'Failed'));
+  }
+}
+
+async function handleDeclineWitness(requestId) {
+  try {
+    const result = await declineWitnessRequest(requestId, currentUser.id);
+    if (result?.success) {
+      showToast('Request declined');
+      await loadAll({ silent: true });
+      renderWitnessView();
+    } else {
+      showToast(result?.error || 'Failed to decline');
+    }
+  } catch (e) {
+    showToast('Error: ' + (e.message || 'Failed'));
+  }
+}
+
+async function handleRemoveWitness() {
+  if (!confirm('Remove your witness? They will no longer receive notifications when you skip.')) return;
+  try {
+    const result = await removeWitness(currentUser.id);
+    if (result?.success) {
+      showToast('Witness removed');
+      await loadAll({ silent: true });
+      renderWitnessView();
+      const modeBtn = $('witness-mode-btn');
+      if (modeBtn) modeBtn.textContent = state.witnessSettings.mode_on ? 'ON' : 'OFF';
+    } else {
+      showToast(result?.error || 'Failed to remove');
+    }
+  } catch (e) {
+    showToast('Error: ' + (e.message || 'Failed'));
+  }
+}
+
+function sendSkipWitnessNotification(habitId) {
+  const ws = state.witnessSettings;
+  if (!ws.mode_on) return;
+  if (!ws.my_witness?.user_id || ws.my_witness?.status !== 'accepted') return;
+  if (ws.last_notified_date === todayStr()) return; // rate limit: 1/day
+
+  const habit = state.habits.find(h => h.id === habitId);
+  if (!habit) return;
+  const streak = calcStreak(habitId);
+
+  try {
+    broadcastWitnessNotification(ws.my_witness.user_id, {
+      from_name: state._witnessUserName,
+      habit_name: habit.name,
+      streak,
+    });
+    state.witnessSettings.last_notified_date = todayStr();
+    saveWitnessSettings();
+  } catch (_) {}
+}
+
+function renderWitnessSettingsDetail() {
+  const container = $('witness-settings-detail');
+  if (!container) return;
+  const ws = state.witnessSettings;
+
+  if (ws.my_witness.user_id && ws.my_witness.status === 'accepted') {
+    container.innerHTML = `<div style="padding:0.5rem 0">
+      <div style="font-size:0.78rem;color:var(--text);margin-bottom:0.25rem">👁 Witnessing: <strong>${escHtml(ws.my_witness.name)}</strong></div>
+      <div style="font-size:0.68rem;color:var(--text-faint)">${escHtml(ws.my_witness.email)}</div>
+      <button class="btn-icon-sm" style="margin-top:0.35rem;color:var(--red)" onclick="handleRemoveWitness();renderSettings();">Remove</button>
+    </div>`;
+  } else if (ws.my_witness.user_id && ws.my_witness.status === 'pending') {
+    container.innerHTML = `<div style="padding:0.5rem 0;font-size:0.78rem;color:var(--amber)">⏳ Request pending to ${escHtml(ws.my_witness.name)}</div>`;
+  } else {
+    container.innerHTML = `<div style="padding:0.5rem 0;font-size:0.78rem;color:var(--text-faint)">No witness set. Go to <a href="#" onclick="switchView('witness');return false" style="color:var(--accent)">Witness view</a> to find one.</div>`;
+  }
+}
+
 // ═══ BIND EVENTS ═════════════════════════════════════════════
 function bindEvents() {
   // Auth — email mode
@@ -2869,6 +3222,7 @@ function bindEvents() {
     state.todayLogs = {};
     state.yearLogs = [];
     if (typeof clearReminders === 'function') clearReminders();
+    if (typeof unsubscribeWitnessBroadcast === 'function') unsubscribeWitnessBroadcast();
     showAuth();
   });
 
@@ -2993,6 +3347,8 @@ function bindEvents() {
         state.todayLogs[habitId] = 0;
         state.pendingSkipHabitId = null;
         _perfectDayFired = false;
+        // Send witness notification if enabled
+        sendSkipWitnessNotification(habitId);
       }
       closeModal('modal-skip');
       renderToday();
@@ -3007,6 +3363,8 @@ function bindEvents() {
       await deleteLog(habitId, todayStr());
       delete state.todayLogs[habitId];
       state.pendingSkipHabitId = null;
+      // Send witness notification if enabled
+      sendSkipWitnessNotification(habitId);
     }
     renderToday();
     writeRitualSnapshot();
@@ -3193,6 +3551,39 @@ function bindEvents() {
   $('goal-delete-btn')?.addEventListener('click', handleDeleteGoal);
   $('goal-target-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSaveGoal(); });
   $('goal-label-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSaveGoal(); });
+
+  // ══ WITNESS / BELL EVENTS ══════════════════════════════════════
+  $('bell-btn')?.addEventListener('click', () => {
+    const panel = $('notif-panel');
+    const overlay = $('notif-panel-overlay');
+    if (!panel) return;
+    const isOpen = !panel.classList.contains('hidden');
+    if (isOpen) {
+      panel.classList.add('hidden');
+      overlay?.classList.add('hidden');
+    } else {
+      panel.classList.remove('hidden');
+      overlay?.classList.remove('hidden');
+      renderWitnessNotifications();
+    }
+  });
+  $('notif-panel-overlay')?.addEventListener('click', () => {
+    $('notif-panel')?.classList.add('hidden');
+    $('notif-panel-overlay')?.classList.add('hidden');
+  });
+  $('notif-clear-btn')?.addEventListener('click', clearWitnessNotifs);
+
+  // Witness mode toggle in settings
+  $('witness-mode-btn')?.addEventListener('click', () => {
+    state.witnessSettings.mode_on = !state.witnessSettings.mode_on;
+    saveWitnessSettings();
+    const btn = $('witness-mode-btn');
+    if (btn) {
+      btn.textContent = state.witnessSettings.mode_on ? 'ON' : 'OFF';
+      btn.className = state.witnessSettings.mode_on ? 'widget-toggle-btn' : 'widget-toggle-btn off';
+    }
+    showToast(state.witnessSettings.mode_on ? 'Witness Mode ON' : 'Witness Mode OFF');
+  });
 }
 
 async function handleTimeSuggestion(habitId, newTime) {

@@ -270,6 +270,7 @@ function subscribeRealtime(callback) {
 function unsubscribeRealtime() {
   _channels.forEach(ch => _sb?.removeChannel(ch));
   _channels = [];
+  unsubscribeWitnessBroadcast();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -374,4 +375,98 @@ async function deleteUserData(key) {
     .eq('user_id', currentUser.id)
     .eq('key', key);
   if (error) throw error;
+}
+
+// ─── WITNESS MODE RPC ───────────────────────────────────────
+async function lookupUserByEmail(email) {
+  if (!_sb) throw new Error('Supabase not configured');
+  const { data, error } = await _sb.rpc('get_user_by_email', { search_email: email });
+  if (error) throw error;
+  return data?.[0] || null;
+}
+
+async function sendWitnessRequest(targetEmail, fromUserId, fromName, fromEmail) {
+  if (!_sb) throw new Error('Supabase not configured');
+  const { data, error } = await _sb.rpc('add_witness_request', {
+    target_email: targetEmail,
+    from_user_id: fromUserId,
+    from_name: fromName,
+    from_email: fromEmail,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function acceptWitnessRequest(requestId, userId) {
+  if (!_sb) throw new Error('Supabase not configured');
+  const { data, error } = await _sb.rpc('accept_witness_request', {
+    request_id: requestId,
+    accepter_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function declineWitnessRequest(requestId, userId) {
+  if (!_sb) throw new Error('Supabase not configured');
+  const { data, error } = await _sb.rpc('decline_witness_request', {
+    request_id: requestId,
+    accepter_user_id: userId,
+  });
+  if (error) throw error;
+  return data;
+}
+
+async function removeWitness(userId) {
+  if (!_sb) throw new Error('Supabase not configured');
+  const { data, error } = await _sb.rpc('remove_witness', { user_id: userId });
+  if (error) throw error;
+  return data;
+}
+
+let _witnessChannel = null;
+let _witnessRequestChannel = null;
+
+function subscribeWitnessBroadcast(userId, onNotify, onRequestUpdate) {
+  if (!_sb) return;
+  // Channel for witness notifications (someone I witness is about to skip)
+  _witnessChannel = _sb.channel(`witness-${userId}`, {
+    config: { broadcast: { ack: false, self: false } },
+  });
+  _witnessChannel.on('broadcast', { event: 'witness_notify' }, (payload) => {
+    if (typeof onNotify === 'function') onNotify(payload.payload);
+  });
+  _witnessChannel.subscribe();
+
+  // Channel for witness request updates (someone sent me a request)
+  _witnessRequestChannel = _sb.channel(`witness-req-${userId}`, {
+    config: { broadcast: { ack: false, self: false } },
+  });
+  _witnessRequestChannel.on('broadcast', { event: 'request_update' }, () => {
+    if (typeof onRequestUpdate === 'function') onRequestUpdate();
+  });
+  _witnessRequestChannel.subscribe();
+}
+
+function unsubscribeWitnessBroadcast() {
+  if (_witnessChannel) { _sb?.removeChannel(_witnessChannel); _witnessChannel = null; }
+  if (_witnessRequestChannel) { _sb?.removeChannel(_witnessRequestChannel); _witnessRequestChannel = null; }
+}
+
+function broadcastWitnessNotification(targetUserId, payload) {
+  if (!_sb) return;
+  _sb.channel(`witness-${targetUserId}`).send({
+    type: 'broadcast',
+    event: 'witness_notify',
+    payload,
+  });
+}
+
+function broadcastWitnessRequestUpdate(targetUserId) {
+  if (!_sb) return;
+  _sb.channel(`witness-req-${targetUserId}`).send({
+    type: 'broadcast',
+    event: 'request_update',
+    payload: {},
+  });
 }

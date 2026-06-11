@@ -128,6 +128,9 @@
       <button class="nav-item" data-view="correlations">
         <span class="nav-icon">⟐</span> Correlations
       </button>
+      <button class="nav-item" data-view="witness">
+        <span class="nav-icon">👁</span> Witness
+      </button>
       <button class="nav-item" data-view="habits">
         <span class="nav-icon">◉</span> My Habits
       </button>
@@ -176,10 +179,28 @@
       </button>
       <h2 class="view-title" id="view-title">Today</h2>
       <div class="topbar-right">
+        <button class="btn-bell" id="bell-btn" title="Witness Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+          <span class="bell-dot hidden" id="bell-dot"></span>
+        </button>
         <button class="btn-theme" id="ptr-desktop-btn" title="Refresh" aria-label="Refresh">⟳</button>
         <button class="btn-theme" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">◑</button>
         <button class="btn-primary" id="topbar-action">+ Add</button>
       </div>
+      <!-- Notification panel -->
+      <div id="notif-panel" class="notif-panel hidden">
+        <div class="notif-panel-header">
+          <span class="notif-panel-title">Witness</span>
+          <button class="notif-clear-btn" id="notif-clear-btn">Clear all</button>
+        </div>
+        <div id="notif-list" class="notif-list">
+          <div class="notif-empty">No witness notifications yet</div>
+        </div>
+      </div>
+      <div id="notif-panel-overlay" class="notif-panel-overlay hidden"></div>
     </header>
 
     <!-- TODAY -->
@@ -385,6 +406,24 @@
         </div>
       </section>
 
+      <!-- Witness -->
+      <section class="settings-section">
+        <div class="settings-section-header">
+          <span class="settings-section-icon">👁</span>
+          <span>Witness</span>
+        </div>
+        <div class="settings-card" id="witness-settings-card">
+          <div class="witness-toggle-row" id="witness-mode-toggle-row">
+            <div>
+              <div class="witness-toggle-label">Witness Mode</div>
+              <div class="witness-toggle-sub">Someone will know when you're about to skip</div>
+            </div>
+            <button class="widget-toggle-btn" id="witness-mode-btn">ON</button>
+          </div>
+          <div id="witness-settings-detail"></div>
+        </div>
+      </section>
+
       <!-- Export -->
       <section class="settings-section">
         <div class="settings-section-header">
@@ -445,6 +484,11 @@
       <div class="section-title">Habit Correlations</div>
       <p class="correlations-desc">Patterns discovered across your logs — no AI, just math.</p>
       <div id="correlations-list"></div>
+    </div>
+
+    <!-- WITNESS VIEW -->
+    <div id="view-witness" class="view">
+      <div id="witness-content"></div>
     </div>
 
     <!-- STACKS -->
