@@ -1481,11 +1481,11 @@ function renderHistory() {
   const wrap = $('heatmap-wrap');
   if (!wrap) return;
 
-  // Lazy-load heatmap data on first render
-  ensureHeatmapData().then(() => {
-    // Re-render if data was just loaded
-    if (state._heatmapLoaded) renderHistory();
-  });
+  // If heatmap data isn't loaded yet, load it once then render
+  if (!state.yearLogs || !state._heatmapLoaded) {
+    ensureHeatmapData().then(() => renderHistory());
+    return;
+  }
 
   // Compute target year
   const targetYear = new Date().getFullYear() + heatmapYearOffset;
@@ -1584,6 +1584,8 @@ function renderHistory() {
 function renderWeeklyBars() {
   const el = $('weekly-bars');
   if (!el) return;
+  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
   const days = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -1591,18 +1593,25 @@ function renderWeeklyBars() {
     days.push(dateStr(d));
   }
 
+  // Build a date→logs lookup map (O(n) once instead of O(7×n) with filter per day)
+  const logMap = {};
   const habitsCount = state.habits.length;
+  for (const l of state.yearLogs) {
+    if (!logMap[l.date]) logMap[l.date] = [];
+    logMap[l.date].push(l);
+  }
+
   const dayData = days.map(ds => {
-    const logs = state.yearLogs.filter(l => l.date === ds);
-    const done = state.habits.filter(h => {
+    const logs = logMap[ds] || [];
+    let done = 0;
+    for (const h of state.habits) {
       const log = logs.find(l => l.habit_id === h.id);
-      if (!log) return false;
-      return h.type === 'checkbox' ? log.value >= 1 : log.value >= h.target;
-    }).length;
+      if (!log) continue;
+      if (h.type === 'checkbox' ? log.value >= 1 : log.value >= h.target) done++;
+    }
     return { ds, done, total: habitsCount };
   });
   const maxDay = Math.max(1, ...dayData.map(d => d.done));
-  const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
   el.innerHTML = dayData.map((d, i) => {
     const pct = (d.done / maxDay) * 100;
     const high = d.done >= Math.ceil(maxDay * 0.7) ? ' high' : '';
