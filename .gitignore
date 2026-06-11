@@ -1,1 +1,24 @@
+# Local config (contains real keys — never commit)
+js/config.js
+js/config.example.js
+
+# Environment files
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Supabase local files
+supabase/
+
+.vercel
+
 backup/
