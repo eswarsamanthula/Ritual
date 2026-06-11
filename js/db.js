@@ -9,7 +9,7 @@ let _channels = [];
 
 // ─── INIT ───────────────────────────────────────────────────
 function initSupabase() {
-  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') return false;
+  if (SUPABASE_URL.includes('your-project.supabase.co')) return false;
   try {
     _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       auth: {

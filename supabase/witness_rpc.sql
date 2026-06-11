@@ -32,7 +32,7 @@ DECLARE
   new_req jsonb;
   my_settings jsonb;
 BEGIN
-  SELECT id INTO target_user FROM auth.users WHERE email = target_email;
+  SELECT id, raw_user_meta_data INTO target_user FROM auth.users WHERE email = target_email;
   IF NOT FOUND THEN
     RETURN jsonb_build_object('success', false, 'error', 'User not found');
   END IF;
