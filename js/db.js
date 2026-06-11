@@ -219,7 +219,7 @@ async function upsertLog(habitId, dateStr, value, note) {
       value: value,
       note: note || null,
       logged_at: new Date().toISOString(),
-    }, { onConflict: 'habit_id,date' });
+    }, { onConflict: 'user_id,habit_id,date' });
     if (error) throw error;
   } catch (e) {
     if (!navigator.onLine) { queueAdd('upsertLog', { habitId, dateStr, value, note }); return; }
@@ -336,7 +336,7 @@ async function _queueDeleteHabit(id) {
 }
 async function _queueUpsertLog(habitId, dateStr, value, note) {
   if (!_sb || !currentUser) throw Error('No auth');
-  const { error } = await _sb.from('habit_logs').upsert({ user_id: currentUser.id, habit_id: habitId, date: dateStr, value: value, note: note || null, logged_at: new Date().toISOString() }, { onConflict: 'habit_id,date' });
+  const { error } = await _sb.from('habit_logs').upsert({ user_id: currentUser.id, habit_id: habitId, date: dateStr, value: value, note: note || null, logged_at: new Date().toISOString() }, { onConflict: 'user_id,habit_id,date' });
   if (error) throw error;
 }
 async function _queueDeleteLog(habitId, dateStr) {

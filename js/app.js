@@ -28,7 +28,6 @@ const state = {
   weekTemplates: {}, // { [habit_id]: [0,1,2,3,4,5,6] }
 };
 
-const TODAY = new Date().toISOString().slice(0, 10);
 let _showAppGuard = false;
 
 // ─── UTILS ───────────────────────────────────────────────────
@@ -64,7 +63,9 @@ function calcStreak(habitId) {
 
   let streak = 0;
   const d = new Date();
-  while (true) {
+  const maxDays = Math.max(state.yearLogs.length, 365) + 7;
+  let guard = 0;
+  while (guard++ < maxDays) {
     const s = dateStr(d);
     if (s === todayStr() && logs[s] === undefined) { d.setDate(d.getDate() - 1); continue; }
     const val = logs[s];

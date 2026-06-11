@@ -4,6 +4,9 @@ const path = require('path');
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://your-project.supabase.co';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || 'your_anon_key';
 
+// Build timestamp used to version the service worker cache — bump on every deploy
+const BUILD_TS = Date.now();
+
 const config = `const SUPABASE_URL      = '${SUPABASE_URL}';
 const SUPABASE_ANON_KEY = '${SUPABASE_ANON_KEY}';
 
@@ -24,3 +27,10 @@ const dir = path.join(__dirname, 'js');
 if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 fs.writeFileSync(path.join(dir, 'config.js'), config);
 console.log('✓ Generated js/config.js');
+
+// Rewrite sw.js with a fresh cache version so stale assets are evicted on deploy
+const swPath = path.join(__dirname, 'sw.js');
+let sw = fs.readFileSync(swPath, 'utf8');
+sw = sw.replace(/const CACHE = 'ritual-[^']+';/, `const CACHE = 'ritual-${BUILD_TS}';`);
+fs.writeFileSync(swPath, sw);
+console.log(`✓ sw.js cache version → ritual-${BUILD_TS}`);
