@@ -34,6 +34,7 @@ let _showAppGuard = false;
 // ─── UTILS ───────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
+const haptic = (ms = 10) => { try { navigator.vibrate(ms); } catch (_) {} };
 const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function showToast(msg, type = 'info') {
@@ -409,16 +410,13 @@ async function loadAll(opts = {}) {
       if (l.note) state.todayNotes[l.habit_id] = l.note;
     });
 
-    // Year logs for heatmap + streaks (last 365 days)
-    const from = new Date();
-    from.setFullYear(from.getFullYear() - 1);
-    state.yearLogs = await getLogsRange(dateStr(from), todayStr());
+    // Year logs for heatmap (last 365 days) — lazy-loaded on History view
+    state._heatmapLoaded = false;
 
-    // Cache to localStorage for offline use
+    // Cache today data to localStorage for offline use
     cacheSave('habits', state.habits);
     cacheSave('todayLogs', state.todayLogs);
     cacheSave('todayNotes', state.todayNotes);
-    cacheSave('yearLogs', state.yearLogs);
 
     // Load pairs, rest days, week templates from user_data
     if (typeof loadAllUserData === 'function') {
@@ -1144,6 +1142,7 @@ function buildHabitCard(h) {
 
 // ─── HABIT INTERACTIONS ──────────────────────────────────────
 async function toggleCheckbox(habitId) {
+  haptic();
   const current = state.todayLogs[habitId] || 0;
   const newVal = current >= 1 ? 0 : 1;
   if (newVal === 0) {
@@ -1163,7 +1162,7 @@ async function toggleCheckbox(habitId) {
 }
 
 async function adjustCount(habitId, delta) {
-  const habit = state.habits.find(h => h.id === habitId);
+  haptic();
   if (!habit) return;
   const current = state.todayLogs[habitId] || 0;
   const next = Math.max(0, current + delta);
@@ -1414,10 +1413,35 @@ loadAll = async function(opts = {}) {
 
 // ─── HISTORY VIEW (HEATMAP) ──────────────────────────────────
 let heatmapYearOffset = 0;
+let _heatmapLoading = false;
+
+async function ensureHeatmapData() {
+  if (state.yearLogs && state._heatmapLoaded) return;
+  if (_heatmapLoading) return;
+  _heatmapLoading = true;
+  try {
+    const from = new Date();
+    from.setFullYear(from.getFullYear() - 1);
+    state.yearLogs = await getLogsRange(dateStr(from), todayStr());
+    state._heatmapLoaded = true;
+    cacheSave('yearLogs', state.yearLogs);
+  } catch (_) {
+    const cached = cacheLoad('yearLogs');
+    if (cached) state.yearLogs = cached;
+  } finally {
+    _heatmapLoading = false;
+  }
+}
 
 function renderHistory() {
   const wrap = $('heatmap-wrap');
   if (!wrap) return;
+
+  // Lazy-load heatmap data on first render
+  ensureHeatmapData().then(() => {
+    // Re-render if data was just loaded
+    if (state._heatmapLoaded) renderHistory();
+  });
 
   // Compute target year
   const targetYear = new Date().getFullYear() + heatmapYearOffset;
@@ -1425,7 +1449,7 @@ function renderHistory() {
   // All logs from the user's tracked range
   const habitsCount = state.habits.length;
   const dayMap = {};
-  state.yearLogs.forEach(log => {
+  (state.yearLogs || []).forEach(log => {
     const h = state.habits.find(h => h.id === log.habit_id);
     if (!h) return;
     const complete = h.type === 'checkbox' ? log.value >= 1 : log.value >= h.target;
