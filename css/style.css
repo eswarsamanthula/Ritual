@@ -1883,3 +1883,76 @@ button:focus:not(:focus-visible) { outline: none; }
 }
 .dayclose-btn:hover  { opacity: 0.85; }
 .dayclose-btn:active { transform: scale(0.97); }
+
+/* ══ GOAL-BASED TARGETS ═══════════════════════════════════════ */
+.goal-progress-wrap { margin: 0.5rem 0; }
+.goal-progress-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0; }
+.goal-progress-bar-wrap { flex: 1; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; }
+.goal-progress-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(.34,1.56,.64,1); }
+.goal-progress-label { font-size: 0.7rem; color: var(--text-muted); min-width: 60px; }
+.goal-progress-pct { font-size: 0.65rem; color: var(--text-faint); font-family: var(--font-mono); min-width: 36px; text-align: right; }
+.goal-chip { font-size: 0.65rem; color: var(--accent); cursor: pointer; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; margin-left: 0.25rem; }
+.goal-chip:hover { background: var(--bg-subtle); }
+.goal-card { background: var(--bg-card); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.5rem; border-left: 3px solid var(--accent); }
+.goal-card-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.goal-card-label { font-size: 0.75rem; color: var(--text); }
+.goal-card-meta { font-size: 0.65rem; color: var(--text-faint); }
+.goal-card-dates { font-size: 0.65rem; color: var(--text-faint); font-family: var(--font-mono); }
+.goal-empty { font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 1rem; }
+
+/* ══ TIME CAPSULE ════════════════════════════════════════════ */
+.capsule-input { width: 100%; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.6rem; color: var(--text); font-family: var(--font-display); font-size: 0.85rem; font-style: italic; resize: vertical; min-height: 60px; }
+.capsule-input::placeholder { color: var(--text-faint); font-style: italic; }
+.time-capsule-area { margin-bottom: 0.75rem; }
+.time-capsule-card { background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 8%, var(--bg-card)), var(--bg-card)); border: 1px solid color-mix(in srgb, var(--accent) 20%, var(--border)); border-radius: var(--radius); padding: 1rem; animation: fadeUp 0.3s ease both; }
+.time-capsule-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.time-capsule-icon { font-size: 1.2rem; }
+.time-capsule-title { font-family: var(--font-display); font-size: 0.85rem; color: var(--accent); }
+.time-capsule-milestone { font-size: 0.65rem; color: var(--text-faint); font-family: var(--font-mono); margin-left: auto; }
+.time-capsule-message { font-family: var(--font-display); font-size: 0.85rem; font-style: italic; color: var(--text); line-height: 1.6; padding: 0.5rem 0.75rem; background: var(--bg-input); border-radius: var(--radius-sm); }
+
+/* ══ INTENTION SETTING ═══════════════════════════════════════ */
+.intention-area { margin-bottom: 0.75rem; }
+.intention-prompt { background: linear-gradient(135deg, color-mix(in srgb, var(--accent-warm) 8%, var(--bg-card)), var(--bg-card)); border: 1px solid color-mix(in srgb, var(--accent-warm) 20%, var(--border)); border-radius: var(--radius); padding: 1rem; animation: fadeUp 0.3s ease both; }
+.intention-prompt-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+.intention-prompt-text { font-family: var(--font-display); font-size: 0.95rem; color: var(--text); font-style: italic; margin-bottom: 0.5rem; }
+.intention-input-wrap { display: flex; gap: 0.5rem; }
+.intention-input { flex: 1; background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.6rem; color: var(--text); font-family: var(--font-display); font-size: 0.85rem; font-style: italic; }
+.intention-input::placeholder { color: var(--text-faint); font-style: italic; }
+.intention-save-btn { background: var(--accent-warm); color: var(--bg); border: none; border-radius: var(--radius-sm); padding: 0.5rem 0.85rem; font-family: var(--font-mono); font-size: 0.68rem; cursor: pointer; white-space: nowrap; }
+.intention-reflection { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+.intention-reflection-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.25rem; }
+.intention-reflection-morning { font-family: var(--font-display); font-size: 0.85rem; font-style: italic; color: var(--text); margin-bottom: 0.5rem; padding: 0.4rem 0.6rem; background: var(--bg-subtle); border-radius: var(--radius-sm); }
+.intention-reflection-question { font-family: var(--font-display); font-size: 0.9rem; color: var(--accent-warm); margin-bottom: 0.5rem; }
+.intention-reflection-btns { display: flex; gap: 0.5rem; }
+.intention-reflection-btn { flex: 1; padding: 0.5rem; border: 1px solid var(--border); background: var(--bg-input); color: var(--text); border-radius: var(--radius-sm); font-family: var(--font-mono); font-size: 0.72rem; cursor: pointer; transition: var(--transition); }
+.intention-reflection-btn:hover { border-color: var(--accent-warm); background: color-mix(in srgb, var(--accent-warm) 8%, var(--bg-input)); }
+.intention-reflection-btn.lived { border-color: var(--accent); color: var(--accent); }
+.intention-done { text-align: center; padding: 0.75rem; color: var(--text-faint); font-size: 0.8rem; }
+
+/* ══ STREAK ARCHAEOLOGY (EULOGY) ════════════════════════════ */
+.streak-eulogy-area { margin-bottom: 0.75rem; }
+.streak-eulogy { background: linear-gradient(135deg, color-mix(in srgb, var(--amber) 10%, var(--bg-card)), var(--bg-card)); border: 1px solid color-mix(in srgb, var(--amber) 25%, var(--border)); border-radius: var(--radius); padding: 1rem; animation: fadeUp 0.3s ease both; }
+.eulogy-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.eulogy-icon { font-size: 1.2rem; }
+.eulogy-title { font-family: var(--font-display); font-size: 0.85rem; color: var(--amber); }
+.eulogy-body { font-size: 0.78rem; color: var(--text-muted); line-height: 1.7; }
+.eulogy-stat-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.25rem 0; }
+.eulogy-stat-label { min-width: 80px; color: var(--text-faint); font-size: 0.7rem; }
+.eulogy-stat-value { color: var(--text); font-family: var(--font-mono); font-size: 0.75rem; }
+.eulogy-dismiss { background: none; border: 1px solid var(--border); color: var(--text-faint); border-radius: var(--radius-sm); padding: 0.3rem 0.7rem; font-size: 0.68rem; cursor: pointer; margin-top: 0.5rem; font-family: var(--font-mono); }
+.eulogy-dismiss:hover { border-color: var(--text-muted); color: var(--text); }
+
+/* ══ HABIT CORRELATIONS ════════════════════════════════════ */
+.correlations-desc { font-size: 0.75rem; color: var(--text-faint); font-style: italic; margin-bottom: 1rem; }
+.correlation-card { background: var(--bg-card); border-radius: var(--radius); padding: 0.85rem; margin-bottom: 0.6rem; border-left: 3px solid var(--accent); animation: fadeUp 0.25s ease both; }
+.correlation-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+.correlation-habits { font-size: 0.8rem; color: var(--text); font-weight: 500; }
+.correlation-arrow { color: var(--text-faint); font-size: 0.7rem; }
+.correlation-stat { font-size: 0.72rem; color: var(--text-muted); line-height: 1.6; }
+.correlation-stat strong { color: var(--text); }
+.correlation-lift { display: inline-block; font-size: 0.65rem; font-family: var(--font-mono); padding: 2px 6px; border-radius: 4px; margin-top: 0.25rem; }
+.correlation-lift.positive { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.correlation-lift.negative { background: color-mix(in srgb, var(--red) 15%, transparent); color: var(--red); }
+.correlation-empty { font-size: 0.8rem; color: var(--text-faint); text-align: center; padding: 2rem; }
+.correlations-view-desc { font-size: 0.75rem; color: var(--text-faint); font-style: italic; margin-bottom: 1rem; }

@@ -26,6 +26,12 @@ const state = {
   scoreMode: 'consistency',
   todayNotes: {},
   weekTemplates: {}, // { [habit_id]: [0,1,2,3,4,5,6] }
+  // New features
+  habitGoals: {},  // { [habitId]: { target_value, unit, label, start_date, end_date } }
+  timeCapsules: {}, // { [habitId]: { message, created_at, last_shown_milestone } }
+  intentions: {},  // { [date]: { morning: string, evening: string, evening_answered: boolean } }
+  streakArchaeology: {}, // { [habitId]: { longest_streak, longest_start, longest_end, break_date, break_reason } }
+  editingGoalHabitId: null, // for goal modal
 };
 
 let _showAppGuard = false;
@@ -361,6 +367,10 @@ async function showApp(user) {
         state.limitlessWidgetOn = false;
       }
       if (userData.habit_stacks) state.stacks = userData.habit_stacks;
+      if (userData.habit_goals) state.habitGoals = userData.habit_goals;
+      if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
+      if (userData.intentions) state.intentions = userData.intentions;
+      if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
     } catch (_) {}
   }
 
@@ -399,6 +409,10 @@ async function showApp(user) {
               state.limitlessWidgetOn = false;
             }
             if (userData.habit_stacks) state.stacks = userData.habit_stacks;
+            if (userData.habit_goals) state.habitGoals = userData.habit_goals;
+            if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
+            if (userData.intentions) state.intentions = userData.intentions;
+            if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
           } catch (_) {}
         }
         // Only re-render live views on sync; skip expensive views (history, stats etc.)
@@ -443,6 +457,10 @@ async function loadAll(opts = {}) {
         loadPairsFromUserData(userData);
         if (userData.rest_days) state.restDays = userData.rest_days;
         if (userData.week_templates) state.weekTemplates = userData.week_templates;
+        if (userData.habit_goals) state.habitGoals = userData.habit_goals;
+        if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
+        if (userData.intentions) state.intentions = userData.intentions;
+        if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
       } catch (_) {}
     }
     $('offline-banner')?.classList.add('hidden');
@@ -472,7 +490,7 @@ function switchView(view) {
   $(`view-${view}`)?.classList.add('active');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-  const titles = { today: 'Today', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings' };
+  const titles = { today: 'Today', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings', correlations: 'Correlations' };
   $('view-title').textContent = titles[view] || view;
   renderView();
 }
@@ -485,6 +503,7 @@ function renderView() {
   else if (state.currentView === 'stacks') renderStacksView();
   else if (state.currentView === 'habits') renderHabitsList();
   else if (state.currentView === 'settings') renderSettings();
+  else if (state.currentView === 'correlations') renderCorrelationsView();
   updateSyncBadge();
 }
 
@@ -690,8 +709,13 @@ function renderToday() {
         </div>
       </div>`;
   }).join('');
+  renderIntention();
+  renderTimeCapsules();
+  renderStreakEulogy();
   checkStreakMilestones();
   checkPerfectDay();
+  // Check streak archaeology for newly broken streaks
+  state.habits.forEach(h => updateStreakArchaeology(h.id));
 }
 
 function isHabitComplete(h) {
@@ -1137,6 +1161,7 @@ function buildHabitCard(h, idx = 0) {
   if (streak > 0) badges.push(`<span class="streak-chip" style="color:${h.color}">◉ ${streak}d</span>`);
   if (debt > 0) badges.push(`<span class="debt-chip" style="color:var(--accent-warm)">−${debt}d</span>`);
   if (isTrigger) badges.push(`<span class="pair-badge">↗</span>`);
+  if (state.habitGoals[h.id]) badges.push(`<span class="goal-chip" onclick="openGoalModal('${h.id}')" title="View goal">🎯</span>`);
   const timeAnalysis = analyzeTimeOfDay(h.id);
   if (timeAnalysis && timeAnalysis.bucket !== h.time_of_day && timeAnalysis.confidence >= 60) {
     badges.push(`<span class="time-suggest-chip" onclick="handleTimeSuggestion('${h.id}','${timeAnalysis.bucket}')" title="Tap to update">🌅 ${timeAnalysis.bucket}</span>`);
@@ -1719,6 +1744,9 @@ function renderStats() {
       <div class="hsr-streak" style="color:${h.color}">${streak}<span>d</span></div>
     </div>`;
   }).join('');
+
+  renderGoalProgress();
+  renderCorrelationsInner($('correlations-stats-list'));
 }
 
 // ─── MY HABITS VIEW ──────────────────────────────────────────
@@ -1746,6 +1774,7 @@ function renderHabitsList() {
         <div class="manage-meta">${h.type} · ${h.type !== 'checkbox' ? h.target + ' ' + h.unit + ' · ' : ''}${h.time_of_day}</div>
       </div>
       <div class="manage-actions">
+        <button class="btn-icon-sm" onclick="openGoalModal('${h.id}')">Goal</button>
         <button class="btn-icon-sm" onclick="openHabitModal('${h.id}')">Edit</button>
         <button class="btn-icon-sm danger" onclick="handleDeleteHabit('${h.id}')">Delete</button>
       </div>
@@ -1784,6 +1813,10 @@ function openHabitModal(habitId) {
   document.querySelectorAll('#habit-week-days .weekday-btn').forEach(btn => {
     btn.classList.toggle('active', days.includes(parseInt(btn.dataset.day)));
   });
+
+  // Time capsule
+  const capEl = $('habit-capsule-input');
+  if (capEl) capEl.value = state.timeCapsules[h?.id]?.message || '';
 
   openModal('modal-habit');
   const pairBtn = $('habit-pair-btn');
@@ -1824,6 +1857,10 @@ async function saveHabitForm() {
       await saveWeekTemplate();
     }
     closeModal('modal-habit');
+    // Save time capsule message
+    const capEl = $('habit-capsule-input');
+    const capMsg = capEl?.value.trim() || '';
+    if (hid) await saveCapsule(hid, capMsg);
     await loadAll();
     renderView();
     showToast(state.editingHabitId ? 'Habit updated' : 'Habit added ✓');
@@ -1835,6 +1872,15 @@ async function saveHabitForm() {
 async function handleDeleteHabit(id) {
   if (!confirm('Delete this habit and all its logs?')) return;
   await deleteHabit(id);
+  // Clean up associated data
+  delete state.habitGoals[id];
+  delete state.timeCapsules[id];
+  delete state.streakArchaeology[id];
+  try { await Promise.allSettled([
+    setUserData('habit_goals', state.habitGoals),
+    setUserData('time_capsules', state.timeCapsules),
+    setUserData('streak_archaeology', state.streakArchaeology),
+  ]); } catch (_) {}
   await loadAll();
   renderView();
   showToast('Habit deleted');
@@ -2274,7 +2320,490 @@ async function shareStreakCard() {
   }
 }
 
-// ─── BIND EVENTS ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+//  GOAL-BASED TARGETS
+// ═══════════════════════════════════════════════════════════════
+
+function calcGoalProgress(habitId) {
+  const goal = state.habitGoals[habitId];
+  if (!goal) return null;
+  const logs = state.yearLogs.filter(l => l.habit_id === habitId && l.date >= goal.start_date && l.date <= todayStr());
+  const total = logs.reduce((s, l) => s + l.value, 0);
+  const pct = Math.min(100, Math.round((total / goal.target_value) * 100));
+  return { current: total, target: goal.target_value, pct, unit: goal.unit, label: goal.label, start_date: goal.start_date, end_date: goal.end_date, habitId };
+}
+
+async function saveGoal(habitId, goalData) {
+  state.habitGoals[habitId] = goalData;
+  try { await setUserData('habit_goals', state.habitGoals); } catch (_) {}
+}
+
+async function deleteGoal(habitId) {
+  delete state.habitGoals[habitId];
+  try { await setUserData('habit_goals', state.habitGoals); } catch (_) {}
+}
+
+function openGoalModal(habitId) {
+  state.editingGoalHabitId = habitId;
+  const goal = state.habitGoals[habitId];
+  const h = state.habits.find(x => x.id === habitId);
+  $('modal-goal-title').textContent = `Goal for ${h ? h.name : 'habit'}`;
+  $('goal-target-input').value = goal?.target_value || '';
+  $('goal-unit-input').value = goal?.unit || (h ? h.unit : '');
+  $('goal-label-input').value = goal?.label || '';
+  $('goal-end-date-input').value = goal?.end_date || '';
+  $('goal-start-date-input').value = goal?.start_date || '';
+  const delBtn = $('goal-delete-btn');
+  if (delBtn) delBtn.style.display = goal ? '' : 'none';
+  openModal('modal-goal');
+}
+
+async function handleSaveGoal() {
+  const hid = state.editingGoalHabitId;
+  if (!hid) { showToast('No habit selected'); return; }
+  const target_value = parseFloat($('goal-target-input').value);
+  if (!target_value || target_value <= 0) { showToast('Enter a target value'); return; }
+  const goal = {
+    target_value,
+    unit: $('goal-unit-input').value.trim(),
+    label: $('goal-label-input').value.trim(),
+    end_date: $('goal-end-date-input').value,
+    start_date: $('goal-start-date-input').value || todayStr(),
+  };
+  if (!goal.end_date) { showToast('Select a target date'); return; }
+  await saveGoal(hid, goal);
+  closeModal('modal-goal');
+  renderView();
+  showToast(goal.label || 'Goal set ✓');
+}
+
+async function handleDeleteGoal() {
+  const hid = state.editingGoalHabitId;
+  if (!hid) return;
+  if (!confirm('Delete this goal?')) return;
+  await deleteGoal(hid);
+  closeModal('modal-goal');
+  renderView();
+  showToast('Goal deleted');
+}
+
+function renderGoalProgress() {
+  const list = $('goals-progress-list');
+  if (!list) return;
+  const goals = state.habits.map(h => calcGoalProgress(h.id)).filter(Boolean);
+  if (goals.length === 0) {
+    list.innerHTML = '<div class="goal-empty">No goals set yet.</div>';
+    return;
+  }
+  list.innerHTML = goals.map(g => {
+    const color = state.habits.find(h => h.id === g.habitId)?.color || 'var(--accent)';
+    const daysLeft = Math.max(0, Math.ceil((new Date(g.end_date) - new Date()) / 86400000));
+    return `<div class="goal-card" style="border-color:${color}">
+      <div class="goal-card-header">
+        <span class="goal-card-label">${escHtml(g.label || 'Goal')}</span>
+        <span class="goal-card-dates">${g.current} / ${g.target} ${g.unit}</span>
+      </div>
+      <div class="goal-progress-wrap">
+        <div class="goal-progress-row">
+          <span class="goal-progress-label">${daysLeft > 0 ? daysLeft + 'd left' : 'Due'}</span>
+          <div class="goal-progress-bar-wrap">
+            <div class="goal-progress-bar-fill" style="width:${g.pct}%;background:${color}"></div>
+          </div>
+          <span class="goal-progress-pct">${g.pct}%</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TIME CAPSULE MESSAGES
+// ═══════════════════════════════════════════════════════════════
+
+async function saveCapsule(habitId, message) {
+  if (!message) {
+    delete state.timeCapsules[habitId];
+  } else {
+    state.timeCapsules[habitId] = {
+      message,
+      created_at: (state.timeCapsules[habitId]?.created_at) || todayStr(),
+      last_shown_milestone: state.timeCapsules[habitId]?.last_shown_milestone || 0,
+    };
+  }
+  try { await setUserData('time_capsules', state.timeCapsules); } catch (_) {}
+}
+
+function checkTimeCapsules() {
+  const today = todayStr();
+  const capsules = [];
+  state.habits.forEach(h => {
+    const capsule = state.timeCapsules[h.id];
+    if (!capsule || !capsule.message) return;
+    const created = new Date(capsule.created_at);
+    const daysSince = Math.floor((new Date(today) - created) / 86400000);
+    const milestones = [30, 90, 365];
+    const nextMilestone = milestones.find(m => daysSince >= m && capsule.last_shown_milestone < m);
+    if (nextMilestone) {
+      capsules.push({ habit: h, capsule, milestone: nextMilestone });
+    }
+  });
+  return capsules;
+}
+
+function renderTimeCapsules() {
+  const area = $('time-capsule-area');
+  if (!area) return;
+  const capsules = checkTimeCapsules();
+  if (capsules.length === 0) { area.innerHTML = ''; return; }
+  area.innerHTML = capsules.map(c => `
+    <div class="time-capsule-card" style="--i:0">
+      <div class="time-capsule-header">
+        <span class="time-capsule-icon">📜</span>
+        <span class="time-capsule-title">A message from your past self</span>
+        <span class="time-capsule-milestone">Day ${c.milestone}</span>
+      </div>
+      <div class="time-capsule-message">"${escHtml(c.capsule.message)}"</div>
+      <div style="font-size:0.65rem;color:var(--text-faint);margin-top:0.35rem;text-align:right">
+        — ${escHtml(c.habit.name)}, started ${formatDate(c.capsule.created_at)}
+      </div>
+    </div>
+  `).join('');
+  // Mark as shown
+  capsules.forEach(c => {
+    state.timeCapsules[c.habit.id].last_shown_milestone = c.milestone;
+  });
+  // Persist updates
+  if (capsules.length > 0) {
+    setTimeout(() => setUserData('time_capsules', state.timeCapsules).catch(() => {}), 500);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  MORNING / EVENING INTENTION SETTING
+// ═══════════════════════════════════════════════════════════════
+
+async function saveIntention(date, type, value) {
+  if (!state.intentions[date]) state.intentions[date] = { morning: '', evening: '', evening_answered: false };
+  if (type === 'morning') state.intentions[date].morning = value;
+  else if (type === 'evening') { state.intentions[date].evening = value; state.intentions[date].evening_answered = true; }
+  try { await setUserData('intentions', state.intentions); } catch (_) {}
+}
+
+function renderIntention() {
+  const area = $('intention-area');
+  if (!area) return;
+  const today = todayStr();
+  const hour = new Date().getHours();
+  const intention = state.intentions[today];
+  const isMorning = hour < 12;
+  const isEvening = hour >= 17;
+
+  // Morning: prompt to set intention
+  if (isMorning && (!intention || !intention.morning)) {
+    area.innerHTML = `
+      <div class="intention-prompt">
+        <div class="intention-prompt-label">☀ Morning</div>
+        <div class="intention-prompt-text">What's your one intention for today?</div>
+        <div class="intention-input-wrap">
+          <input type="text" class="intention-input" id="intention-morning-input" placeholder="e.g. Be present, finish the report..." maxlength="120" />
+          <button class="intention-save-btn" id="intention-save-btn">Set</button>
+        </div>
+      </div>`;
+    setTimeout(() => {
+      const input = $('intention-morning-input');
+      const btn = $('intention-save-btn');
+      if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') btn?.click(); });
+      if (btn) btn.addEventListener('click', async () => {
+        const val = input.value.trim();
+        if (!val) { showToast('Enter an intention'); return; }
+        await saveIntention(today, 'morning', val);
+        renderIntention();
+        showToast('Intention set ✓');
+      });
+    }, 50);
+    return;
+  }
+
+  // Morning with intention set: show it
+  if (isMorning && intention?.morning) {
+    area.innerHTML = `
+      <div class="intention-prompt">
+        <div class="intention-prompt-label">☀ Today's Intention</div>
+        <div class="intention-prompt-text">"${escHtml(intention.morning)}"</div>
+        <div class="intention-done">☀ Set this morning</div>
+      </div>`;
+    return;
+  }
+
+  // Evening: show reflection
+  if (isEvening && intention?.morning && !intention?.evening_answered) {
+    area.innerHTML = `
+      <div class="intention-reflection">
+        <div class="intention-reflection-label">🌙 Evening Reflection</div>
+        <div class="intention-reflection-question">Did you live it?</div>
+        <div class="intention-reflection-morning">"${escHtml(intention.morning)}"</div>
+        <div class="intention-reflection-btns">
+          <button class="intention-reflection-btn lived" id="intention-lived-yes">Yes, I did 🌿</button>
+          <button class="intention-reflection-btn" id="intention-lived-partly">Partly 🌘</button>
+          <button class="intention-reflection-btn" id="intention-lived-no">Not today 🌑</button>
+        </div>
+      </div>`;
+    setTimeout(() => {
+      ['lived-yes', 'lived-partly', 'lived-no'].forEach(id => {
+        const btn = $(`intention-${id}`);
+        if (btn) btn.addEventListener('click', async () => {
+          await saveIntention(today, 'evening', id.replace('lived-', ''));
+          renderIntention();
+        });
+      });
+    }, 50);
+    return;
+  }
+
+  // Evening answered or no morning intention
+  if (isEvening && intention?.evening_answered) {
+    const emoji = intention.evening === 'yes' ? '🌿' : intention.evening === 'partly' ? '🌘' : '🌑';
+    area.innerHTML = `
+      <div class="intention-prompt">
+        <div class="intention-prompt-label">🌙 Evening</div>
+        <div class="intention-prompt-text">${emoji} "${escHtml(intention.morning)}"</div>
+        <div class="intention-done">Reflection recorded</div>
+      </div>`;
+    return;
+  }
+
+  area.innerHTML = '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  STREAK ARCHAEOLOGY (EULOGY)
+// ═══════════════════════════════════════════════════════════════
+
+function calcLongestStreak(habitId) {
+  const habit = state.habits.find(h => h.id === habitId);
+  if (!habit) return null;
+  const logs = state.yearLogs
+    .filter(l => l.habit_id === habitId && l.value > 0)
+    .reduce((m, l) => { m[l.date] = l.value; return m; }, {});
+  const dates = Object.keys(logs).sort();
+  if (dates.length === 0) return null;
+
+  let bestStreak = 0, bestStart = '', bestEnd = '';
+  let currentStreak = 1, currentStart = dates[0], currentEnd = dates[0];
+
+  for (let i = 1; i < dates.length; i++) {
+    const prev = new Date(dates[i - 1]);
+    const curr = new Date(dates[i]);
+    const diff = (curr - prev) / 86400000;
+    if (diff === 1) {
+      currentStreak++;
+      currentEnd = dates[i];
+    } else {
+      if (currentStreak > bestStreak) {
+        bestStreak = currentStreak;
+        bestStart = currentStart;
+        bestEnd = currentEnd;
+      }
+      currentStreak = 1;
+      currentStart = dates[i];
+      currentEnd = dates[i];
+    }
+  }
+  if (currentStreak > bestStreak) {
+    bestStreak = currentStreak;
+    bestStart = currentStart;
+    bestEnd = currentEnd;
+  }
+
+  return { longest: bestStreak, start: bestStart, end: bestEnd };
+}
+
+async function updateStreakArchaeology(habitId) {
+  const currentStreak = calcStreak(habitId);
+  const existing = state.streakArchaeology[habitId];
+
+  if (currentStreak > 0) return; // streak still alive
+
+  // Streak just broke — check if we need to record it
+  if (existing && existing.break_date === todayStr()) return;
+
+  const longestData = calcLongestStreak(habitId);
+  if (!longestData || longestData.longest < 1) return;
+
+  // Find the break reason
+  const breakLog = state.yearLogs.find(l =>
+    l.habit_id === habitId && l.date > longestData.end &&
+    l.value === 0 && l.note
+  );
+
+  state.streakArchaeology[habitId] = {
+    longest_streak: Math.max(existing?.longest_streak || 0, longestData.longest),
+    longest_start: existing?.longest_start || longestData.start,
+    longest_end: existing?.longest_end || longestData.end,
+    break_date: todayStr(),
+    break_reason: breakLog?.note || null,
+    shown: false,
+  };
+
+  try { await setUserData('streak_archaeology', state.streakArchaeology); } catch (_) {}
+}
+
+function renderStreakEulogy() {
+  const area = $('streak-eulogy-area');
+  if (!area) return;
+
+  const today = todayStr();
+  const eulogies = [];
+
+  state.habits.forEach(h => {
+    const arch = state.streakArchaeology[h.id];
+    if (!arch || arch.shown || arch.break_date !== today) return;
+    eulogies.push({ habit: h, arch });
+  });
+
+  if (eulogies.length === 0) { area.innerHTML = ''; return; }
+
+  area.innerHTML = eulogies.map(e => {
+    const reasonText = e.arch.break_reason ? `Reason: ${e.arch.break_reason}` : '';
+    return `<div class="streak-eulogy" style="--i:0">
+      <div class="eulogy-header">
+        <span class="eulogy-icon">🕯</span>
+        <span class="eulogy-title">Streak ended — ${escHtml(e.habit.name)}</span>
+      </div>
+      <div class="eulogy-body">
+        <div class="eulogy-stat-row">
+          <span class="eulogy-stat-label">Longest run</span>
+          <span class="eulogy-stat-value">${e.arch.longest_streak} days</span>
+        </div>
+        <div class="eulogy-stat-row">
+          <span class="eulogy-stat-label">From → To</span>
+          <span class="eulogy-stat-value">${formatDate(e.arch.longest_start)} → ${formatDate(e.arch.longest_end)}</span>
+        </div>
+        <div class="eulogy-stat-row">
+          <span class="eulogy-stat-label">Broken on</span>
+          <span class="eulogy-stat-value">${formatDate(e.arch.break_date)}</span>
+        </div>
+        ${reasonText ? `<div class="eulogy-stat-row"><span class="eulogy-stat-label">Why</span><span class="eulogy-stat-value">${reasonText}</span></div>` : ''}
+      </div>
+      <button class="eulogy-dismiss" onclick="dismissEulogy('${e.habit.id}')">Acknowledge</button>
+    </div>`;
+  }).join('');
+}
+
+function dismissEulogy(habitId) {
+  if (state.streakArchaeology[habitId]) {
+    state.streakArchaeology[habitId].shown = true;
+    setUserData('streak_archaeology', state.streakArchaeology).catch(() => {});
+  }
+  renderStreakEulogy();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  HABIT CORRELATION MAP
+// ═══════════════════════════════════════════════════════════════
+
+function computeCorrelations() {
+  const habits = state.habits;
+  if (habits.length < 2) return [];
+
+  const results = [];
+
+  for (let i = 0; i < habits.length; i++) {
+    for (let j = i + 1; j < habits.length; j++) {
+      const a = habits[i], b = habits[j];
+      const corr = computePairCorrelation(a, b);
+      if (corr) results.push(corr);
+    }
+  }
+
+  results.sort((x, y) => Math.abs(y.lift) - Math.abs(x.lift));
+  return results.slice(0, 10); // top 10
+}
+
+function computePairCorrelation(a, b) {
+  // Build per-day completion map
+  const logMap = {};
+  state.yearLogs.forEach(l => {
+    if (l.habit_id !== a.id && l.habit_id !== b.id) return;
+    if (!logMap[l.date]) logMap[l.date] = {};
+    logMap[l.date][l.habit_id] = l.value;
+  });
+
+  const aCompleted = aHabit => {
+    const h = aHabit.id === a.id ? a : b;
+    return h.type === 'checkbox' ? aHabit >= 1 : aHabit >= h.target;
+  };
+
+  let both = 0, aDone = 0, bGivenA = 0, bGivenNotA = 0;
+  let aDays = 0, notADays = 0;
+
+  Object.entries(logMap).forEach(([date, vals]) => {
+    const valA = vals[a.id], valB = vals[b.id];
+    if (valA === undefined || valB === undefined) return;
+
+    const doneA = aCompleted({ ...a, id: a.id, value: valA });
+    const doneB = aCompleted({ ...b, id: b.id, value: valB });
+
+    if (doneA && doneB) both++;
+    if (doneA) { aDays++; if (doneB) bGivenA++; }
+    if (!doneA) { notADays++; if (doneB) bGivenNotA++; }
+  });
+
+  const total = aDays + notADays;
+  if (total < 10) return null; // minimum data
+
+  const pctBgivenA = aDays > 0 ? (bGivenA / aDays) * 100 : 0;
+  const pctBgivenNotA = notADays > 0 ? (bGivenNotA / notADays) * 100 : 0;
+  const lift = pctBgivenA - pctBgivenNotA;
+
+  if (Math.abs(lift) < 10) return null; // significant enough?
+
+  return {
+    a: { id: a.id, name: a.name, icon: a.icon, color: a.color },
+    b: { id: b.id, name: b.name, icon: b.icon, color: b.color },
+    pctBgivenA: Math.round(pctBgivenA),
+    pctBgivenNotA: Math.round(pctBgivenNotA),
+    lift: Math.round(lift * 10) / 10,
+    both,
+    aDays,
+    notADays,
+  };
+}
+
+function renderCorrelationsView() {
+  const list = $('correlations-list');
+  if (!list) return;
+  renderCorrelationsInner(list);
+}
+
+function renderCorrelationsInner(container) {
+  const correlations = computeCorrelations();
+  if (correlations.length === 0) {
+    container.innerHTML = '<div class="correlation-empty">Not enough data yet. Keep logging to discover patterns.</div>';
+    return;
+  }
+  container.innerHTML = correlations.map(c => {
+    const direction = c.lift > 0 ? 'positive' : 'negative';
+    const verb = c.lift > 0 ? 'do' : 'skip';
+    const result = c.lift > 0 ? `${c.pctBgivenA}%` : `only ${c.pctBgivenNotA}%`;
+    return `<div class="correlation-card">
+      <div class="correlation-header">
+        <span style="color:${c.a.color}">${escHtml(c.a.icon)}</span>
+        <span class="correlation-habits">${escHtml(c.a.name)}</span>
+        <span class="correlation-arrow">↔</span>
+        <span style="color:${c.b.color}">${escHtml(c.b.icon)}</span>
+        <span class="correlation-habits">${escHtml(c.b.name)}</span>
+      </div>
+      <div class="correlation-stat">
+        On days you <strong>${verb}</strong> ${escHtml(c.a.name)}, you do ${escHtml(c.b.name)} <strong>${c.pctBgivenA}%</strong> of the time.
+        On days you don't, ${result}.
+      </div>
+      <span class="correlation-lift ${direction}">${c.lift > 0 ? '+' : ''}${c.lift}% correlation</span>
+    </div>`;
+  }).join('');
+}
+
+// ═══ BIND EVENTS ═════════════════════════════════════════════
 function bindEvents() {
   // Auth — email mode
   let authMode = 'signin';
@@ -2658,6 +3187,12 @@ function bindEvents() {
   document.querySelectorAll('#habit-week-days .weekday-btn').forEach(btn => {
     btn.addEventListener('click', () => toggleWeekDay(parseInt(btn.dataset.day)));
   });
+
+  // ══ GOAL EVENTS ═══════════════════════════════════════════════
+  $('save-goal-btn')?.addEventListener('click', handleSaveGoal);
+  $('goal-delete-btn')?.addEventListener('click', handleDeleteGoal);
+  $('goal-target-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSaveGoal(); });
+  $('goal-label-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSaveGoal(); });
 }
 
 async function handleTimeSuggestion(habitId, newTime) {
