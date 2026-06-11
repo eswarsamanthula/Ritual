@@ -298,6 +298,7 @@ async function init() {
     }
 
     bindEvents();
+    ptrInit();
   } catch (e) {
     console.error('Init failed:', e);
     showAuth();
@@ -1833,6 +1834,227 @@ function cycleTheme() {
   });
 })();
 
+// ─── PULL-TO-REFRESH ───────────────────────────────────────────
+const _ptr = { pulling: false, startY: 0, pullDist: 0, threshold: 80, refreshing: false };
+
+function ptrInit() {
+  document.addEventListener('touchstart', ptrTouchStart, { passive: true });
+  document.addEventListener('touchmove', ptrTouchMove, { passive: false });
+  document.addEventListener('touchend', ptrTouchEnd, { passive: true });
+}
+
+function ptrTouchStart(e) {
+  const scrollEl = document.scrollingElement || document.documentElement;
+  if (scrollEl.scrollTop !== 0 || _ptr.refreshing) return;
+  _ptr.pulling = true;
+  _ptr.startY = e.touches[0].clientY;
+  _ptr.pullDist = 0;
+}
+
+function ptrTouchMove(e) {
+  if (!_ptr.pulling) return;
+  const y = e.touches[0].clientY;
+  let dist = y - _ptr.startY;
+  if (dist < 0) { _ptr.pulling = false; ptrReset(); return; }
+  if (dist > 50) dist = 50 + (dist - 50) * 0.45;
+  _ptr.pullDist = dist;
+  const pct = Math.min(dist / _ptr.threshold, 1);
+  const overlay = $('ptr-overlay');
+  const ring = $('ptr-ring-fill');
+  if (overlay) {
+    overlay.classList.remove('ptr-hidden');
+    overlay.classList.add('ptr-visible');
+    overlay.style.transform = `translateY(${dist}px)`;
+  }
+  if (ring) {
+    const circ = 125.66;
+    ring.style.strokeDashoffset = String(circ * (1 - pct));
+  }
+  const label = $('ptr-label');
+  if (label) label.textContent = pct >= 1 ? 'Release to refresh' : 'Pull to refresh';
+  if (pct >= 1) e.preventDefault();
+}
+
+function ptrTouchEnd() {
+  if (!_ptr.pulling) return;
+  _ptr.pulling = false;
+  if (_ptr.pullDist >= _ptr.threshold) ptrRefresh();
+  else ptrReset();
+}
+
+async function ptrRefresh() {
+  _ptr.refreshing = true;
+  const label = $('ptr-label');
+  if (label) label.textContent = 'Refreshing…';
+  const ring = $('ptr-ring-fill');
+  if (ring) { ring.style.strokeDashoffset = '0'; ring.style.transition = 'stroke-dashoffset .3s ease'; }
+  const overlay = $('ptr-overlay');
+  if (overlay) {
+    overlay.style.transform = 'translateY(80px)';
+    overlay.classList.add('ptr-refreshing');
+  }
+  try {
+    if (typeof queueDrain === 'function') await queueDrain();
+    if (currentUser) await loadAll({ silent: true });
+    renderView();
+    showToast('Refreshed ✓');
+  } catch (_) {
+    showToast('Refresh failed');
+  }
+  setTimeout(ptrReset, 500);
+}
+
+function ptrReset() {
+  _ptr.refreshing = false;
+  const overlay = $('ptr-overlay');
+  const ring = $('ptr-ring-fill');
+  const label = $('ptr-label');
+  if (overlay) {
+    overlay.style.transform = '';
+    overlay.classList.remove('ptr-visible', 'ptr-refreshing');
+    overlay.classList.add('ptr-hidden');
+  }
+  if (ring) {
+    ring.style.strokeDashoffset = '125.66';
+    ring.style.transition = 'stroke-dashoffset .35s cubic-bezier(.34,1.56,.64,1)';
+  }
+  if (label) label.textContent = 'Pull to refresh';
+}
+
+// ─── SHAREABLE STREAK CARD ─────────────────────────────────────
+async function generateStreakCard() {
+  const w = 600, h = 400, dpr = 2;
+  const canvas = document.createElement('canvas');
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const isDark = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() === '#1a1a14';
+  const bg1 = isDark ? '#2a2820' : '#f5f2eb';
+  const bg2 = isDark ? '#1a1a14' : '#e8e4d9';
+  const text = isDark ? '#e8e4d9' : '#2a2820';
+  const muted = isDark ? '#9c9880' : '#6b6550';
+  const accent = '#7fb685';
+  const ringTrack = isDark ? '#2a2a22' : '#e0dbd0';
+
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, bg1);
+  grad.addColorStop(1, bg2);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  const fontMono = 'DM Mono';
+  const fontDisplay = 'Cormorant Garamond';
+
+  await document.fonts.ready;
+
+  ctx.fillStyle = accent;
+  ctx.font = `600 14px "${fontMono}", monospace`;
+  ctx.fillText('RITUAL', 40, 50);
+
+  const best = calcBestStreak();
+  ctx.fillStyle = text;
+  ctx.font = `500 72px "${fontDisplay}", serif`;
+  ctx.fillText(String(best), 40, 175);
+  ctx.font = `400 14px "${fontMono}", monospace`;
+  ctx.fillStyle = muted;
+  ctx.fillText('day streak', 40, 205);
+
+  const total = state.habits.length;
+  const done = Object.values(state.todayLogs).filter(v => v > 0).length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+  const cx = 460, cy = 130, r = 75;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+  ctx.strokeStyle = ringTrack;
+  ctx.lineWidth = 8;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + (pct / 100) * 2 * Math.PI);
+  ctx.strokeStyle = accent;
+  ctx.lineWidth = 8;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  ctx.fillStyle = text;
+  ctx.font = `500 32px "${fontDisplay}", serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(`${pct}%`, cx, cy + 6);
+  ctx.textAlign = 'left';
+  ctx.font = `400 12px "${fontMono}", monospace`;
+  ctx.fillStyle = muted;
+  ctx.textAlign = 'center';
+  ctx.fillText('today', cx, cy + 30);
+  ctx.textAlign = 'left';
+
+  const statY = 290;
+  const stats = [
+    { label: 'Habits', value: String(total) },
+    { label: 'Done', value: String(Object.values(state.todayLogs).filter(v => v > 0).length) },
+    { label: 'Perfect Days', value: String(state.yearLogs ? new Set(state.yearLogs.filter(l => l.value > 0).map(l => l.date)).size : 0) },
+  ];
+  const statW = 160;
+  stats.forEach((s, i) => {
+    const x = 40 + i * statW;
+    ctx.fillStyle = text;
+    ctx.font = `500 28px "${fontDisplay}", serif`;
+    ctx.fillText(s.value, x, statY);
+    ctx.fillStyle = muted;
+    ctx.font = `400 11px "${fontMono}", monospace`;
+    ctx.fillText(s.label, x, statY + 22);
+  });
+
+  ctx.fillStyle = muted;
+  ctx.font = `400 10px "${fontMono}", monospace`;
+  ctx.textAlign = 'left';
+  ctx.fillText(new Date().toISOString().slice(0, 10), 40, 380);
+
+  return canvas;
+}
+
+function calcBestStreak() {
+  if (!state.habits.length) return 0;
+  let best = 0;
+  state.habits.forEach(h => {
+    const logs = state.yearLogs ? state.yearLogs.filter(l => l.habit_id === h.id && l.value > 0).map(l => l.date) : [];
+    if (!logs.length) return;
+    const unique = [...new Set(logs)].sort();
+    let streak = 1;
+    for (let i = 1; i < unique.length; i++) {
+      const d1 = new Date(unique[i - 1]), d2 = new Date(unique[i]);
+      const diff = (d2 - d1) / 86400000;
+      if (diff === 1) streak++;
+      else { if (streak > best) best = streak; streak = 1; }
+    }
+    if (streak > best) best = streak;
+  });
+  return best;
+}
+
+async function shareStreakCard() {
+  try {
+    const canvas = await generateStreakCard();
+    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) { showToast('Failed to generate card'); return; }
+    const file = new File([blob], `ritual-streak-${todayStr()}.png`, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ title: 'My Ritual Streak', text: 'Check out my habit streak!', files: [file] });
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = file.name;
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast('Card downloaded ✓');
+    }
+  } catch (e) {
+    if (e.name !== 'AbortError') showToast('Share failed');
+  }
+}
+
 // ─── BIND EVENTS ─────────────────────────────────────────────
 function bindEvents() {
   // Auth — email mode
@@ -1946,6 +2168,18 @@ function bindEvents() {
 
   // Theme
   $('theme-toggle')?.addEventListener('click', cycleTheme);
+
+  // Desktop refresh button
+  $('ptr-desktop-btn')?.addEventListener('click', async () => {
+    if (_ptr.refreshing) return;
+    if (typeof queueDrain === 'function') await queueDrain();
+    if (currentUser) await loadAll({ silent: true });
+    renderView();
+    showToast('Refreshed ✓');
+  });
+
+  // Share streak card
+  $('share-card-btn')?.addEventListener('click', shareStreakCard);
 
   // Modal closes
   $$('[data-modal]').forEach(btn => {

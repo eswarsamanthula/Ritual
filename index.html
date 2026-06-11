@@ -153,13 +153,27 @@
   <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
   <!-- Main -->
-  <main class="main-content">
+  <main class="main-content" id="main-content">
+    <!-- Pull-to-refresh indicator -->
+    <div id="ptr-overlay" class="ptr-hidden">
+      <div class="ptr-ring">
+        <svg width="48" height="48" viewBox="0 0 48 48">
+          <circle cx="24" cy="24" r="20" fill="none" stroke="var(--bg-subtle)" stroke-width="3"/>
+          <circle id="ptr-ring-fill" cx="24" cy="24" r="20" fill="none"
+            stroke="var(--accent)" stroke-width="3" stroke-linecap="round"
+            stroke-dasharray="125.66" stroke-dashoffset="125.66"
+            transform="rotate(-90 24 24)"/>
+        </svg>
+      </div>
+      <div class="ptr-label" id="ptr-label">Pull to refresh</div>
+    </div>
     <header class="topbar">
       <button class="hamburger" id="hamburger">
         <span></span><span></span><span></span>
       </button>
       <h2 class="view-title" id="view-title">Today</h2>
       <div class="topbar-right">
+        <button class="btn-theme" id="ptr-desktop-btn" title="Refresh">⟳</button>
         <button class="btn-theme" id="theme-toggle" title="Toggle theme">◑</button>
         <button class="btn-primary" id="topbar-action">+ Add</button>
       </div>
@@ -204,6 +218,9 @@
             <span class="health-score-sub" id="health-score-sub">—</span>
           </div>
         </div>
+        <button class="btn-share-card" id="share-card-btn" title="Share streak card">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </button>
       </div>
       <div id="limitless-widget" class="limitless-widget-wrap"></div>
       <div id="habit-suggest" class="smart-suggest hidden"></div>
