@@ -341,6 +341,9 @@ async function showApp(user) {
   await seedDefaultHabits();
   await loadAll();
 
+  // Drain any queued writes from offline session
+  if (navigator.onLine) await queueDrain();
+
   // Load cross-device syncable data from user_data (limitless snapshot, widget toggle)
   if (typeof loadAllUserData === 'function') {
     try {
@@ -390,29 +393,55 @@ async function showApp(user) {
   });
 }
 
-async function loadAll() {
-  [state.habits] = await Promise.all([getHabits()]);
-  const todayLogs = await getTodayLogs(todayStr());
-  state.todayLogs = {};
-  state.todayNotes = {};
-  todayLogs.forEach(l => {
-    state.todayLogs[l.habit_id] = l.value;
-    if (l.note) state.todayNotes[l.habit_id] = l.note;
-  });
+async function loadAll(opts = {}) {
+  const { silent = false } = opts;
+  try {
+    [state.habits] = await Promise.all([getHabits()]);
+    const todayLogs = await getTodayLogs(todayStr());
+    state.todayLogs = {};
+    state.todayNotes = {};
+    todayLogs.forEach(l => {
+      state.todayLogs[l.habit_id] = l.value;
+      if (l.note) state.todayNotes[l.habit_id] = l.note;
+    });
 
-  // Year logs for heatmap + streaks (last 365 days)
-  const from = new Date();
-  from.setFullYear(from.getFullYear() - 1);
-  state.yearLogs = await getLogsRange(dateStr(from), todayStr());
+    // Year logs for heatmap + streaks (last 365 days)
+    const from = new Date();
+    from.setFullYear(from.getFullYear() - 1);
+    state.yearLogs = await getLogsRange(dateStr(from), todayStr());
 
-  // Load pairs, rest days, week templates from user_data
-  if (typeof loadAllUserData === 'function') {
-    try {
-      const userData = await loadAllUserData();
-      loadPairsFromUserData(userData);
-      if (userData.rest_days) state.restDays = userData.rest_days;
-      if (userData.week_templates) state.weekTemplates = userData.week_templates;
-    } catch (_) {}
+    // Cache to localStorage for offline use
+    cacheSave('habits', state.habits);
+    cacheSave('todayLogs', state.todayLogs);
+    cacheSave('todayNotes', state.todayNotes);
+    cacheSave('yearLogs', state.yearLogs);
+
+    // Load pairs, rest days, week templates from user_data
+    if (typeof loadAllUserData === 'function') {
+      try {
+        const userData = await loadAllUserData();
+        loadPairsFromUserData(userData);
+        if (userData.rest_days) state.restDays = userData.rest_days;
+        if (userData.week_templates) state.weekTemplates = userData.week_templates;
+      } catch (_) {}
+    }
+    $('offline-banner')?.classList.add('hidden');
+  } catch (e) {
+    console.error('Load error:', e);
+    if (!navigator.onLine) {
+      // offline — restore from cache
+      const habits = cacheLoad('habits');
+      const todayLogs = cacheLoad('todayLogs');
+      const todayNotes = cacheLoad('todayNotes');
+      const yearLogs = cacheLoad('yearLogs');
+      if (habits) state.habits = habits;
+      if (todayLogs) state.todayLogs = todayLogs;
+      if (todayNotes) state.todayNotes = todayNotes;
+      if (yearLogs) state.yearLogs = yearLogs;
+      if (!silent) $('offline-banner')?.classList.remove('hidden');
+    } else if (!silent) {
+      showToast('Failed to load data — pull to refresh');
+    }
   }
 }
 
@@ -1335,10 +1364,13 @@ function initOfflineDetection() {
   window.addEventListener('offline', () => {
     $('offline-banner')?.classList.remove('hidden');
   });
-  window.addEventListener('online', () => {
+  window.addEventListener('online', async () => {
     $('offline-banner')?.classList.add('hidden');
-    showToast('Back online — refreshing…');
-    if (currentUser) loadAll().then(() => renderView());
+    await queueDrain();
+    if (currentUser) await loadAll({ silent: true });
+    renderView();
+    const q = queueSize();
+    showToast(q > 0 ? `${q} change${q > 1 ? 's' : ''} pending sync` : 'Back online — refreshed ✓');
   });
   if (!navigator.onLine) {
     $('offline-banner')?.classList.remove('hidden');
@@ -1352,8 +1384,14 @@ function updateSyncBadge() {
   const text = $('sync-text');
   if (!dot || !text) return;
   _lastSyncTime = new Date();
-  dot.className = 'sync-dot synced';
-  text.textContent = 'Synced';
+  if (!navigator.onLine || queueSize() > 0) {
+    const q = queueSize();
+    dot.className = 'sync-dot offline';
+    text.textContent = q > 0 ? `${q} pending` : 'Offline';
+  } else {
+    dot.className = 'sync-dot synced';
+    text.textContent = 'Synced';
+  }
 }
 function markSyncing() {
   const dot = $('sync-dot');

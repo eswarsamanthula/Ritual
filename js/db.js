@@ -121,46 +121,66 @@ async function saveHabit(habit) {
     color: habit.color || '#7fb685',
     sort_order: habit.sort_order || 0,
   };
-  if (habit.id) {
-    const { error } = await _sb.from('habits')
-      .update(payload)
-      .eq('id', habit.id)
-      .eq('user_id', currentUser.id);
-    if (error) throw error;
-    return { id: habit.id };
-  } else {
-    const { data, error } = await _sb.from('habits')
-      .insert({ ...payload, user_id: currentUser.id })
-      .select('id')
-      .single();
-    if (error) throw error;
-    return data;
+  try {
+    if (habit.id) {
+      const { error } = await _sb.from('habits')
+        .update(payload)
+        .eq('id', habit.id)
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+      return { id: habit.id };
+    } else {
+      const { data, error } = await _sb.from('habits')
+        .insert({ ...payload, user_id: currentUser.id })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('saveHabit', habit); return { id: habit.id || 'pending' }; }
+    throw e;
   }
 }
 
 async function deleteHabit(id) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
-  const { error } = await _sb.from('habits')
-    .delete()
-    .eq('id', id)
-    .eq('user_id', currentUser.id);
-  if (error) throw error;
+  try {
+    const { error } = await _sb.from('habits')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', currentUser.id);
+    if (error) throw error;
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('deleteHabit', id); return; }
+    throw e;
+  }
 }
 
 async function updateHabitTime(id, timeOfDay) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
-  const { error } = await _sb.from('habits')
-    .update({ time_of_day: timeOfDay })
-    .eq('id', id)
-    .eq('user_id', currentUser.id);
-  if (error) throw error;
+  try {
+    const { error } = await _sb.from('habits')
+      .update({ time_of_day: timeOfDay })
+      .eq('id', id)
+      .eq('user_id', currentUser.id);
+    if (error) throw error;
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('saveHabit', { id, time_of_day: timeOfDay }); return; }
+    throw e;
+  }
 }
 
 async function reorderHabits(orderedIds) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
-  await Promise.all(orderedIds.map((id, i) =>
-    _sb.from('habits').update({ sort_order: i }).eq('id', id).eq('user_id', currentUser.id)
-  ));
+  try {
+    await Promise.all(orderedIds.map((id, i) =>
+      _sb.from('habits').update({ sort_order: i }).eq('id', id).eq('user_id', currentUser.id)
+    ));
+  } catch (e) {
+    if (!navigator.onLine) return; // silently skip reorder when offline
+    throw e;
+  }
 }
 
 // ─── HABIT LOGS ──────────────────────────────────────────────
@@ -191,25 +211,35 @@ async function getLogsRange(fromDate, toDate) {
 
 async function upsertLog(habitId, dateStr, value, note) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
-  const { error } = await _sb.from('habit_logs').upsert({
-    user_id: currentUser.id,
-    habit_id: habitId,
-    date: dateStr,
-    value: value,
-    note: note || null,
-    logged_at: new Date().toISOString(),
-  }, { onConflict: 'habit_id,date' });
-  if (error) throw error;
+  try {
+    const { error } = await _sb.from('habit_logs').upsert({
+      user_id: currentUser.id,
+      habit_id: habitId,
+      date: dateStr,
+      value: value,
+      note: note || null,
+      logged_at: new Date().toISOString(),
+    }, { onConflict: 'habit_id,date' });
+    if (error) throw error;
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('upsertLog', { habitId, dateStr, value, note }); return; }
+    throw e;
+  }
 }
 
 async function deleteLog(habitId, dateStr) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
-  const { error } = await _sb.from('habit_logs')
-    .delete()
-    .eq('user_id', currentUser.id)
-    .eq('habit_id', habitId)
-    .eq('date', dateStr);
-  if (error) throw error;
+  try {
+    const { error } = await _sb.from('habit_logs')
+      .delete()
+      .eq('user_id', currentUser.id)
+      .eq('habit_id', habitId)
+      .eq('date', dateStr);
+    if (error) throw error;
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('deleteLog', { habitId, dateStr }); return; }
+    throw e;
+  }
 }
 
 // ─── SEED DEFAULT HABITS ─────────────────────────────────────
@@ -240,6 +270,79 @@ function subscribeRealtime(callback) {
 function unsubscribeRealtime() {
   _channels.forEach(ch => _sb?.removeChannel(ch));
   _channels = [];
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  OFFLINE CACHE + WRITE QUEUE
+// ═══════════════════════════════════════════════════════════════
+
+const _CACHE_PREFIX = 'ritual_cache_';
+const _QUEUE_KEY = 'ritual_write_queue';
+
+function cacheSave(key, data) {
+  try { localStorage.setItem(_CACHE_PREFIX + key, JSON.stringify(data)); } catch (_) {}
+}
+function cacheLoad(key) {
+  try { const r = localStorage.getItem(_CACHE_PREFIX + key); return r ? JSON.parse(r) : null; } catch (_) { return null; }
+}
+function cacheClear() {
+  Object.keys(localStorage).filter(k => k.startsWith(_CACHE_PREFIX)).forEach(k => localStorage.removeItem(k));
+}
+
+function queueGet() {
+  try { return JSON.parse(localStorage.getItem(_QUEUE_KEY) || '[]'); } catch { return []; }
+}
+function queueSet(q) {
+  localStorage.setItem(_QUEUE_KEY, JSON.stringify(q));
+}
+function queueAdd(action, payload) {
+  const q = queueGet(); q.push({ action, payload, ts: Date.now() }); queueSet(q);
+}
+function queueSize() { return queueGet().length; }
+
+async function queueDrain() {
+  const q = queueGet();
+  if (!q.length) return;
+  const kept = [];
+  for (const item of q) {
+    try {
+      switch (item.action) {
+        case 'saveHabit':  await _queueSaveHabit(item.payload); break;
+        case 'deleteHabit': await _queueDeleteHabit(item.payload); break;
+        case 'upsertLog':  await _queueUpsertLog(item.payload.habitId, item.payload.dateStr, item.payload.value, item.payload.note); break;
+        case 'deleteLog':  await _queueDeleteLog(item.payload.habitId, item.payload.dateStr); break;
+      }
+    } catch (_) { kept.push(item); }
+  }
+  queueSet(kept);
+}
+
+async function _queueSaveHabit(habit) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const payload = { name: habit.name, icon: habit.icon || '◎', type: habit.type || 'checkbox', target: habit.target || 1, unit: habit.unit || '', time_of_day: habit.time_of_day || 'any', color: habit.color || '#7fb685', sort_order: habit.sort_order || 0 };
+  if (habit.id) {
+    const { error } = await _sb.from('habits').update(payload).eq('id', habit.id).eq('user_id', currentUser.id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await _sb.from('habits').insert({ ...payload, user_id: currentUser.id }).select('id').single();
+    if (error) throw error;
+    return data;
+  }
+}
+async function _queueDeleteHabit(id) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const { error } = await _sb.from('habits').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) throw error;
+}
+async function _queueUpsertLog(habitId, dateStr, value, note) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const { error } = await _sb.from('habit_logs').upsert({ user_id: currentUser.id, habit_id: habitId, date: dateStr, value: value, note: note || null, logged_at: new Date().toISOString() }, { onConflict: 'habit_id,date' });
+  if (error) throw error;
+}
+async function _queueDeleteLog(habitId, dateStr) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const { error } = await _sb.from('habit_logs').delete().eq('user_id', currentUser.id).eq('habit_id', habitId).eq('date', dateStr);
+  if (error) throw error;
 }
 
 // ─── USER DATA (shared key-value sync with Limitless) ──────
