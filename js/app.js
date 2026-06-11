@@ -257,38 +257,55 @@ function bindPairModal() {
 
 // ─── INIT ────────────────────────────────────────────────────
 async function init() {
-  applyTheme();
-  const hasSupabase = initSupabase();
+  try {
+    applyTheme();
+    const hasSupabase = initSupabase();
 
-  if (!hasSupabase) {
-    $('auth-not-configured')?.classList.remove('hidden');
-    $('google-signin-btn').disabled = true;
-    $('email-action-btn').disabled = true;
-    showAuth();
-  } else {
-    const session = await getSession();
-    if (session && !_showAppGuard) {
-      try { await showApp(session.user); } catch (e) { console.error('Init showApp failed:', e); showAuth(); }
-    } else if (!session) {
+    if (!hasSupabase) {
+      $('auth-not-configured')?.classList.remove('hidden');
+      $('google-signin-btn').disabled = true;
+      $('email-action-btn').disabled = true;
       showAuth();
-    }
-    onAuthChange(async (session, event) => {
-      try {
-        if (!session) {
-          if (event === 'SIGNED_OUT') { _showAppGuard = false; showAuth(); }
-          return;
+    } else {
+      const session = await getSession();
+      if (session && !_showAppGuard) {
+        try { await showApp(session.user); } catch (e) { console.error('Init showApp failed:', e); showAuth(); }
+      } else if (!session) {
+        // Fallback: check localStorage flag for session recovery
+        const hasLoggedInBefore = localStorage.getItem('limitless_logged_in');
+        if (hasLoggedInBefore && !_showAppGuard) {
+          try {
+            const retry = await getSession();
+            if (retry) { await showApp(retry.user); }
+            else { showAuth(); }
+          } catch (_) { showAuth(); }
+        } else {
+          showAuth();
         }
-        if (!_showAppGuard) { await showApp(session.user); }
-      } catch (e) { console.error('Auth change error:', e); }
-    });
-  }
+      }
+      onAuthChange(async (session, event) => {
+        try {
+          if (!session) {
+            if (event === 'SIGNED_OUT') { _showAppGuard = false; showAuth(); }
+            return;
+          }
+          localStorage.setItem('limitless_logged_in', '1');
+          if (!_showAppGuard) { await showApp(session.user); }
+        } catch (e) { console.error('Auth change error:', e); }
+      });
+    }
 
-  bindEvents();
+    bindEvents();
+  } catch (e) {
+    console.error('Init failed:', e);
+    showAuth();
+  }
 }
 
 // ─── AUTH SCREENS ────────────────────────────────────────────
 function showAuth() {
-  $('loading-screen')?.classList.add('hidden');
+  const loading = document.getElementById('loading-screen');
+  if (loading) loading.classList.add('hidden');
   $('auth-screen').classList.add('active');
   $('app-screen').classList.remove('active');
 }

@@ -16,7 +16,6 @@ function initSupabase() {
         persistSession: true,
         storage: localStorage,
         autoRefreshToken: true,
-        detectSessionInUrl: true,
       },
     });
     return true;
@@ -60,6 +59,7 @@ async function signInWithEmail(email, password) {
 // ─── AUTH — SIGN OUT ─────────────────────────────────────────
 async function signOut() {
   unsubscribeRealtime();
+  localStorage.removeItem('limitless_logged_in');
   if (_sb) await _sb.auth.signOut();
   currentUser = null;
 }
@@ -83,6 +83,7 @@ function onAuthChange(callback) {
   if (!_sb) return;
   _sb.auth.onAuthStateChange((event, session) => {
     currentUser = session?.user || null;
+    if (session) localStorage.setItem('limitless_logged_in', '1');
     callback(session, event);
   });
 }
