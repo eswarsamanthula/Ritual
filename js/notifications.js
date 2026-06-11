@@ -39,10 +39,19 @@ async function requestNotificationPermission() {
   }
 }
 
+let _reminderTimeout = null;
+let _reminderInterval = null;
+
+function clearReminders() {
+  if (_reminderTimeout) { clearTimeout(_reminderTimeout); _reminderTimeout = null; }
+  if (_reminderInterval) { clearInterval(_reminderInterval); _reminderInterval = null; }
+}
+
 // ─── SCHEDULE DAILY REMINDER ─────────────────────────────────
 // Call this after login to set a daily 8pm reminder if not already set
 function scheduleDailyReminder() {
   if (notifPermission !== 'granted') return;
+  clearReminders();
 
   const now = new Date();
   const next = new Date();
@@ -50,10 +59,9 @@ function scheduleDailyReminder() {
   if (next <= now) next.setDate(next.getDate() + 1); // if past 8pm, schedule for tomorrow
 
   const delay = next - now;
-  setTimeout(() => {
+  _reminderTimeout = setTimeout(() => {
     fireHabitReminder();
-    // Re-schedule for next day
-    setInterval(fireHabitReminder, 24 * 60 * 60 * 1000);
+    _reminderInterval = setInterval(fireHabitReminder, 24 * 60 * 60 * 1000);
   }, delay);
 }
 

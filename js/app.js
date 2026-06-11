@@ -66,11 +66,11 @@ function calcStreak(habitId) {
   const d = new Date();
   while (true) {
     const s = dateStr(d);
-    if (s === todayStr() && !logs[s]) { d.setDate(d.getDate() - 1); continue; }
+    if (s === todayStr() && logs[s] === undefined) { d.setDate(d.getDate() - 1); continue; }
     const val = logs[s];
     if (!isActiveToday(habitId, s)) { streak++; d.setDate(d.getDate() - 1); continue; }
     if (isRestDay(habitId, s)) { streak++; d.setDate(d.getDate() - 1); continue; }
-    if (!val || val < habit.target) break;
+    if (val === undefined || val < habit.target) break;
     streak++;
     d.setDate(d.getDate() - 1);
   }
@@ -203,7 +203,7 @@ function openPairModal() {
   const targetSel = $('pair-target-select');
   if (targetSel) {
     const others = state.habits.filter(h => h.id !== _pairingTriggerId);
-    targetSel.innerHTML = others.map(h => `<option value="${h.id}">${h.icon} ${h.name}</option>`).join('');
+    targetSel.innerHTML = others.map(h => `<option value="${escHtml(h.id)}">${escHtml(h.icon)} ${escHtml(h.name)}</option>`).join('');
   }
   const selAction = document.querySelector('[data-pair-action].selected');
   if (selAction) selAction.classList.remove('selected');
@@ -222,7 +222,7 @@ function renderPairList() {
   list.innerHTML = pairs.map(p => {
     const t = state.habits.find(h => h.id === p.triggered_habit_id);
     return `<div class="pair-row">
-      <span>${t ? t.icon + ' ' + t.name : 'Unknown'} → ${p.action === 'auto_complete' ? 'auto' : 'open'}</span>
+      <span>${t ? escHtml(t.icon) + ' ' + escHtml(t.name) : 'Unknown'} → ${p.action === 'auto_complete' ? 'auto' : 'open'}</span>
       <button class="pair-remove" onclick="removePair('${p.id}')">✕</button>
     </div>`;
   }).join('');
@@ -334,6 +334,7 @@ async function showApp(user) {
     const avatar = $('user-avatar');
     if (user.user_metadata?.avatar_url) {
       avatar.src = user.user_metadata.avatar_url;
+      avatar.alt = name + ' avatar';
       avatar.style.display = 'block';
     } else {
       avatar.style.display = 'none';
@@ -1823,12 +1824,18 @@ async function handleDeleteHabit(id) {
 
 // ─── MODALS ──────────────────────────────────────────────────
 let _modalOpenCount = 0;
+let _lastFocusedEl = null;
 function openModal(id) {
-  // Close any other open modals first to prevent stacking
+  _lastFocusedEl = document.activeElement;
   $$('.modal-backdrop.open').forEach(m => {
     if (m.id !== id) m.classList.remove('open');
   });
-  $(`${id}`)?.classList.add('open');
+  const el = $(`${id}`);
+  if (el) {
+    el.classList.add('open');
+    const first = el.querySelector('button, input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    first?.focus();
+  }
   _modalOpenCount = $$('.modal-backdrop.open').length;
   document.body.style.overflow = _modalOpenCount > 0 ? 'hidden' : '';
 }
@@ -1836,6 +1843,8 @@ function closeModal(id) {
   $(`${id}`)?.classList.remove('open');
   _modalOpenCount = $$('.modal-backdrop.open').length;
   document.body.style.overflow = _modalOpenCount > 0 ? 'hidden' : '';
+  if (id === 'modal-skip') state.pendingSkipHabitId = null;
+  if (_lastFocusedEl) { _lastFocusedEl.focus(); _lastFocusedEl = null; }
 }
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
@@ -2238,6 +2247,7 @@ function bindEvents() {
     state.habits = [];
     state.todayLogs = {};
     state.yearLogs = [];
+    if (typeof clearReminders === 'function') clearReminders();
     showAuth();
   });
 
@@ -2265,16 +2275,19 @@ function bindEvents() {
 
   // Hamburger
   $('hamburger')?.addEventListener('click', () => {
-    $('sidebar').classList.toggle('open');
+    const open = $('sidebar').classList.toggle('open');
     $('sidebar-overlay').classList.toggle('visible');
+    $('hamburger').setAttribute('aria-expanded', String(open));
   });
   $('sidebar-close')?.addEventListener('click', () => {
     $('sidebar').classList.remove('open');
     $('sidebar-overlay').classList.remove('visible');
+    $('hamburger')?.setAttribute('aria-expanded', 'false');
   });
   $('sidebar-overlay')?.addEventListener('click', () => {
     $('sidebar').classList.remove('open');
     $('sidebar-overlay').classList.remove('visible');
+    $('hamburger')?.setAttribute('aria-expanded', 'false');
   });
 
   // Topbar add

@@ -21,7 +21,7 @@
 <body>
 
 <!-- ══ LOADING SCREEN ════════════════════════════════════════ -->
-<div id="loading-screen" class="loading-screen">
+<div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
   <div class="loading-spinner"></div>
   <span class="loading-text">Loading...</span>
 </div>
@@ -168,13 +168,13 @@
       <div class="ptr-label" id="ptr-label">Pull to refresh</div>
     </div>
     <header class="topbar">
-      <button class="hamburger" id="hamburger">
+      <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false">
         <span></span><span></span><span></span>
       </button>
       <h2 class="view-title" id="view-title">Today</h2>
       <div class="topbar-right">
-        <button class="btn-theme" id="ptr-desktop-btn" title="Refresh">⟳</button>
-        <button class="btn-theme" id="theme-toggle" title="Toggle theme">◑</button>
+        <button class="btn-theme" id="ptr-desktop-btn" title="Refresh" aria-label="Refresh">⟳</button>
+        <button class="btn-theme" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">◑</button>
         <button class="btn-primary" id="topbar-action">+ Add</button>
       </div>
     </header>
@@ -218,7 +218,7 @@
             <span class="health-score-sub" id="health-score-sub">—</span>
           </div>
         </div>
-        <button class="btn-share-card" id="share-card-btn" title="Share streak card">
+        <button class="btn-share-card" id="share-card-btn" title="Share streak card" aria-label="Share streak card">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
         </button>
       </div>
@@ -455,7 +455,7 @@
 
 
 <!-- SKIP REASON MODAL -->
-<div id="modal-skip" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Skip reason">
+<div id="modal-skip" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="skip-modal-title">
   <div class="modal">
     <div class="modal-header">
       <h3 id="skip-modal-title">Why skipping?</h3>
@@ -479,7 +479,7 @@
 </div>
 
 <!-- ADD/EDIT HABIT MODAL -->
-<div id="modal-habit" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Habit editor">
+<div id="modal-habit" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-habit-title">
   <div class="modal">
     <div class="modal-header">
       <h3 id="modal-habit-title">Add Habit</h3>
@@ -575,7 +575,7 @@
 </div>
 
 <!-- ══ PAIR MODAL ═══════════════════════════════════════════ -->
-<div id="modal-pair" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Link habits">
+<div id="modal-pair" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pair-modal-title">
   <div class="modal modal-sm">
     <div class="modal-header">
       <h3 id="pair-modal-title">Link Habit</h3>
@@ -609,7 +609,7 @@
 </div>
 
 <!-- LOG TIME MODAL -->
-<div id="modal-log" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Log habit">
+<div id="modal-log" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="log-modal-title">
   <div class="modal">
     <div class="modal-header">
       <h3 id="log-modal-title">Log Habit</h3>
@@ -644,7 +644,7 @@
 </div>
 
 <!-- STACK MODAL -->
-<div id="modal-stack" class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Stack editor">
+<div id="modal-stack" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-stack-title">
   <div class="modal">
     <div class="modal-header">
       <h3 id="modal-stack-title">New Stack</h3>
@@ -694,7 +694,7 @@
 </div>
 
 <!-- TOAST -->
-<div id="toast" class="toast"></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <!-- OFFLINE BANNER -->
 <div id="offline-banner" class="offline-banner hidden">
