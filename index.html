@@ -208,7 +208,7 @@
                 stroke="var(--green)" stroke-width="3"
                 stroke-dasharray="138.2" stroke-dashoffset="138.2"
                 stroke-linecap="round" transform="rotate(-90 28 28)"
-                style="transition:stroke-dashoffset .6s cubic-bezier(.4,0,.2,1)"/>
+                style="transition:stroke-dashoffset .7s cubic-bezier(.34,1.56,.64,1)"/>
             </svg>
             <span class="health-ring-pct" id="health-ring-pct">0%</span>
           </div>
@@ -436,7 +436,15 @@
       </div>
       <p class="stacks-desc">Group habits into stacks and log them all in one tap.</p>
       <div id="stacks-list" class="stacks-grid">
-        <div class="empty-state"><span class="empty-icon">⊞</span><p>No stacks yet.<br/>Create a stack to batch-log related habits.</p><button class="btn-primary" onclick="openStackModal(null)">+ New Stack</button></div>
+        <div class="empty-state">
+          <svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.5rem;opacity:.6">
+            <rect x="16" y="16" width="40" height="14" rx="4" stroke="var(--border)"/>
+            <rect x="16" y="34" width="40" height="14" rx="4" stroke="var(--accent)"/>
+            <rect x="16" y="52" width="40" height="14" rx="4" stroke="var(--text-faint)" stroke-width="1"/>
+            <path d="M30 23l12 0M30 41l12 0" stroke="var(--text-faint)" stroke-width="1"/>
+          </svg>
+          <p>No stacks yet.<br/>Create a stack to batch-log related habits.</p><button class="btn-primary" onclick="openStackModal(null)">+ New Stack</button>
+        </div>
       </div>
     </div>
 
@@ -707,6 +715,12 @@
   <button id="dismiss-notif-btn" class="dismiss-btn">✕</button>
 </div>
 
+<div class="particles-container">
+  <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
+  <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
+  <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
+  <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
+</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/config.js"></script>
 <script src="js/db.js"></script>

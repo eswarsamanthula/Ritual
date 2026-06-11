@@ -642,7 +642,12 @@ function renderToday() {
 
   if (total === 0) {
     grid.innerHTML = `<div class="empty-state">
-      <span class="empty-icon">◎</span>
+      <svg width="80" height="80" viewBox="0 0 80 80" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.5rem;opacity:.6">
+        <circle cx="40" cy="40" r="28" stroke="var(--border)"/>
+        <path d="M30 40l8 8 14-14" stroke="var(--accent)"/>
+        <path d="M22 28a20 20 0 0 0 0 24" stroke="var(--text-faint)" stroke-width="1"/>
+        <path d="M58 28a20 20 0 0 1 0 24" stroke="var(--text-faint)" stroke-width="1"/>
+      </svg>
       <p>No habits yet.<br/>Add your first one to begin.</p>
       <button class="btn-primary" onclick="openHabitModal(null)">+ Add Habit</button>
     </div>`;
@@ -652,16 +657,24 @@ function renderToday() {
   const groupOrder = ['morning', 'afternoon', 'evening', 'any'];
   const groupLabels = { morning: '☀ Morning', afternoon: '◑ Afternoon', evening: '◐ Evening', any: '◎ Anytime' };
 
+  let cardIdx = 0;
   grid.innerHTML = groupOrder.map(g => {
     if (!groups[g] || groups[g].length === 0) return '';
+    const cards = groups[g].map(h => {
+      const html = buildHabitCard(h, cardIdx);
+      cardIdx++;
+      return html;
+    }).join('');
     return `
       <div class="group-section">
         <div class="group-label">${groupLabels[g]}</div>
         <div class="habit-cards">
-          ${groups[g].map(h => buildHabitCard(h)).join('')}
+          ${cards}
         </div>
       </div>`;
   }).join('');
+  checkStreakMilestones();
+  checkPerfectDay();
 }
 
 function isHabitComplete(h) {
@@ -1077,7 +1090,7 @@ async function deleteStack(id) {
   showToast('Stack deleted');
 }
 
-function buildHabitCard(h) {
+function buildHabitCard(h, idx = 0) {
   const val = state.todayLogs[h.id] || 0;
   const complete = isHabitComplete(h);
   const pct = h.type === 'checkbox' ? (complete ? 100 : 0) : Math.min(100, (val / h.target) * 100);
@@ -1088,15 +1101,17 @@ function buildHabitCard(h) {
   const circ = 2 * Math.PI * 22;
   const offset = circ * (1 - pct / 100);
 
+  const checkMarkSvg = `<svg viewBox="0 0 18 18"><polyline class="check-path${complete ? '' : ' instant'}" points="4,9 8,13 14,5"/></svg>`;
+
   let controls = '';
   if (h.type === 'checkbox') {
     controls = `<button class="habit-check ${complete ? 'done' : ''}" onclick="toggleCheckbox('${h.id}')" style="--hc:${h.color}">
-      ${complete ? '✓' : ''}
+      ${checkMarkSvg}
     </button>`;
   } else if (h.type === 'count') {
     controls = `<div class="count-controls">
       <button class="count-btn" onclick="adjustCount('${h.id}', -1)">−</button>
-      <span class="count-val">${val}<span class="count-unit">/${h.target}</span></span>
+      <span class="count-val"><span class="count-num" id="count-${h.id}">${val}</span><span class="count-unit">/${h.target}</span></span>
       <button class="count-btn plus" onclick="adjustCount('${h.id}', 1)" style="color:${h.color}">+</button>
     </div>`;
   } else {
@@ -1115,7 +1130,7 @@ function buildHabitCard(h) {
     badges.push(`<span class="time-suggest-chip" onclick="handleTimeSuggestion('${h.id}','${timeAnalysis.bucket}')" title="Tap to update">🌅 ${timeAnalysis.bucket}</span>`);
   }
 
-  return `<div class="habit-card ${complete ? 'complete' : ''} ${isRest ? 'rest-mode' : ''}" style="--hc:${h.color}">
+  return `<div class="habit-card ${complete ? 'complete' : ''} ${isRest ? 'rest-mode' : ''}" style="--hc:${h.color};--i:${idx}">
     <div class="habit-card-left">
       <div class="habit-ring-wrap">
         <svg width="52" height="52" viewBox="0 0 52 52">
@@ -1123,7 +1138,7 @@ function buildHabitCard(h) {
           <circle cx="26" cy="26" r="22" fill="none" stroke="${h.color}" stroke-width="3"
             stroke-dasharray="${circ}" stroke-dashoffset="${offset}"
             stroke-linecap="round" transform="rotate(-90 26 26)"
-            style="transition:stroke-dashoffset .5s ease"/>
+            style="transition:stroke-dashoffset .6s cubic-bezier(.34,1.56,.64,1)"/>
         </svg>
         <span class="habit-icon" style="color:${h.color}">${escHtml(h.icon)}</span>
       </div>
@@ -1147,13 +1162,16 @@ async function toggleCheckbox(habitId) {
   const current = state.todayLogs[habitId] || 0;
   const newVal = current >= 1 ? 0 : 1;
   if (newVal === 0) {
-    // Prompt skip reason before clearing
     state.pendingSkipHabitId = habitId;
     const habit = state.habits.find(h => h.id === habitId);
     $('skip-modal-title').textContent = `Why skipping ${habit?.name || 'habit'}?`;
     openModal('modal-skip');
     return;
   } else {
+    // Optimistic UI: show done state immediately
+    const btn = document.querySelector(`.habit-check[onclick*="'${habitId}'"]`);
+    if (btn) btn.classList.add('done');
+    _perfectDayFired = false;
     await upsertLog(habitId, todayStr(), newVal, null);
     state.todayLogs[habitId] = newVal;
   }
@@ -1164,13 +1182,27 @@ async function toggleCheckbox(habitId) {
 
 async function adjustCount(habitId, delta) {
   haptic();
+  const habit = state.habits.find(h => h.id === habitId);
   if (!habit) return;
   const current = state.todayLogs[habitId] || 0;
   const next = Math.max(0, current + delta);
+
+  // Animate the number roll
+  const numEl = document.getElementById(`count-${habitId}`);
+  if (numEl) {
+    numEl.classList.add('roll-out');
+    await new Promise(r => setTimeout(r, 80));
+    numEl.textContent = next;
+    numEl.classList.remove('roll-out');
+    numEl.classList.add('roll-in');
+    setTimeout(() => numEl.classList.remove('roll-in'), 250);
+  }
+
   if (next === 0) {
     await deleteLog(habitId, todayStr());
     delete state.todayLogs[habitId];
   } else {
+    _perfectDayFired = false;
     await upsertLog(habitId, todayStr(), next, null);
     state.todayLogs[habitId] = next;
   }
@@ -1675,7 +1707,12 @@ function renderHabitsList() {
   if (!list) return;
   if (state.habits.length === 0) {
     list.innerHTML = `<div class="empty-state">
-      <span class="empty-icon">◎</span>
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.5rem;opacity:.6">
+        <circle cx="36" cy="28" r="12" stroke="var(--border)"/>
+        <path d="M18 60c0-10 8-18 18-18s18 8 18 18" stroke="var(--text-faint)" stroke-width="1"/>
+        <path d="M52 14l6 6-6 6" stroke="var(--accent)"/>
+        <path d="M14 14l6 6-6 6" stroke="var(--text-faint)" stroke-width="1"/>
+      </svg>
       <p>No habits yet.</p>
       <button class="btn-primary" onclick="openHabitModal(null)">+ Add Habit</button>
     </div>`;
@@ -1833,6 +1870,86 @@ function cycleTheme() {
     if (localStorage.getItem('ritual_theme') === 'system') applyTheme();
   });
 })();
+
+// ─── CONFETTI SYSTEM ────────────────────────────────────────────
+const _milestones = [3, 7, 14, 21, 30, 60, 90, 180, 365];
+let _firedMilestones = {};
+let _perfectDayFired = false;
+
+function fireConfetti(x, y, count = 60) {
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti-canvas';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const colors = ['#7fb685','#e8a87c','#89b4c9','#c49ac4','#e07b7b','#f0c96e','#b5c987'];
+  const cx = x || window.innerWidth / 2;
+  const cy = y || window.innerHeight * 0.35;
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 8 + 3;
+    particles.push({
+      x: cx, y: cy,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 6,
+      w: Math.random() * 6 + 3, h: Math.random() * 4 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rot: Math.random() * 360,
+      rotV: (Math.random() - 0.5) * 12,
+      life: 1, decay: 0.008 + Math.random() * 0.01,
+    });
+  }
+  let frame = 0;
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let alive = false;
+    for (const p of particles) {
+      if (p.life <= 0) continue;
+      alive = true;
+      p.x += p.vx; p.vy += 0.2; p.y += p.vy;
+      p.vx *= 0.99; p.rot += p.rotV;
+      p.life -= p.decay;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI / 180);
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      ctx.restore();
+    }
+    if (alive) requestAnimationFrame(animate);
+    else canvas.remove();
+  }
+  animate();
+}
+
+function checkStreakMilestones() {
+  const today = todayStr();
+  const firedKey = `ritual_milestones_${today}`;
+  const fired = JSON.parse(localStorage.getItem(firedKey) || '[]');
+  state.habits.forEach(h => {
+    const s = calcStreak(h.id);
+    const nextM = _milestones.find(m => s >= m && !fired.includes(`${h.id}_${m}`));
+    if (nextM) {
+      fired.push(`${h.id}_${nextM}`);
+      setTimeout(() => fireConfetti(null, null, 40 + nextM), 300);
+    }
+  });
+  localStorage.setItem(firedKey, JSON.stringify(fired));
+}
+
+function checkPerfectDay() {
+  if (_perfectDayFired) return;
+  const total = state.habits.length;
+  if (total === 0) return;
+  const done = state.habits.filter(h => isHabitComplete(h)).length;
+  if (done === total) {
+    _perfectDayFired = true;
+    setTimeout(() => fireConfetti(null, null, 80), 500);
+  }
+}
 
 // ─── PULL-TO-REFRESH ───────────────────────────────────────────
 const _ptr = { pulling: false, startY: 0, pullDist: 0, threshold: 80, refreshing: false };
@@ -2237,10 +2354,10 @@ function bindEvents() {
       const reason = btn.dataset.reason;
       const habitId = state.pendingSkipHabitId;
       if (habitId) {
-        // Log 0 with the chosen reason as note
         await upsertLog(habitId, todayStr(), 0, reason);
         state.todayLogs[habitId] = 0;
         state.pendingSkipHabitId = null;
+        _perfectDayFired = false;
       }
       closeModal('modal-skip');
       renderToday();
