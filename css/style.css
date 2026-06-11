@@ -300,6 +300,7 @@ body::after {
   font-family: var(--font-mono); font-size: 0.78rem;
   cursor: pointer; border-radius: var(--radius-sm);
   transition: var(--transition); text-align: left; width: 100%;
+  justify-content: flex-start;
 }
 .nav-item:hover { background: var(--bg-subtle); color: var(--text); }
 .nav-item.active { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }

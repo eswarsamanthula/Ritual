@@ -373,29 +373,37 @@ async function showApp(user) {
 
   // Live cross-device sync with 500ms debounce
   let _rtTimer;
+  let _rtBusy = false;
   subscribeRealtime(async (table) => {
+    if (_rtBusy) return;
     clearTimeout(_rtTimer);
     _rtTimer = setTimeout(async () => {
-      await loadAll();
-      if (typeof loadAllUserData === 'function') {
-        try {
-          const userData = await loadAllUserData();
-          if (userData.limitless_today_snapshot) {
-            state.limitlessSnapshot = userData.limitless_today_snapshot;
-          } else {
-            await fetchLimitlessFallback();
-          }
-          if (userData.limitless_widget_on === false) {
-            state.limitlessWidgetOn = false;
-          } else if (userData.limitless_widget_on === true) {
-            state.limitlessWidgetOn = true;
-          } else {
-            state.limitlessWidgetOn = false;
-          }
-          if (userData.habit_stacks) state.stacks = userData.habit_stacks;
-        } catch (_) {}
+      if (_rtBusy) return;
+      _rtBusy = true;
+      try {
+        await loadAll();
+        if (typeof loadAllUserData === 'function') {
+          try {
+            const userData = await loadAllUserData();
+            if (userData.limitless_today_snapshot) {
+              state.limitlessSnapshot = userData.limitless_today_snapshot;
+            } else {
+              await fetchLimitlessFallback();
+            }
+            if (userData.limitless_widget_on === false) {
+              state.limitlessWidgetOn = false;
+            } else if (userData.limitless_widget_on === true) {
+              state.limitlessWidgetOn = true;
+            } else {
+              state.limitlessWidgetOn = false;
+            }
+            if (userData.habit_stacks) state.stacks = userData.habit_stacks;
+          } catch (_) {}
+        }
+        renderView();
+      } finally {
+        _rtBusy = false;
       }
-      renderView();
     }, 500);
   });
 }
