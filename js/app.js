@@ -402,22 +402,28 @@ async function showApp(user) {
 async function loadAll(opts = {}) {
   const { silent = false } = opts;
   try {
-    [state.habits] = await Promise.all([getHabits()]);
-    const todayLogs = await getTodayLogs(todayStr());
+    const from = new Date(); from.setFullYear(from.getFullYear() - 1);
+    const [habitsRes, logsRes, yearRes] = await Promise.allSettled([
+      getHabits(),
+      getTodayLogs(todayStr()),
+      getLogsRange(dateStr(from), todayStr()),
+    ]);
+    state.habits = habitsRes.value || [];
+    state.yearLogs = yearRes.status === 'fulfilled' ? (yearRes.value || []) : (cacheLoad('yearLogs') || []);
+    state._heatmapLoaded = true;
     state.todayLogs = {};
     state.todayNotes = {};
-    todayLogs.forEach(l => {
+    (logsRes.value || []).forEach(l => {
       state.todayLogs[l.habit_id] = l.value;
       if (l.note) state.todayNotes[l.habit_id] = l.note;
     });
 
-    // Year logs for heatmap (last 365 days) — lazy-loaded on History view
-    state._heatmapLoaded = false;
 
     // Cache today data to localStorage for offline use
     cacheSave('habits', state.habits);
     cacheSave('todayLogs', state.todayLogs);
     cacheSave('todayNotes', state.todayNotes);
+    cacheSave('yearLogs', state.yearLogs);
 
     // Load pairs, rest days, week templates from user_data
     if (typeof loadAllUserData === 'function') {
