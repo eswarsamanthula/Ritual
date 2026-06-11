@@ -151,6 +151,7 @@ function isActiveToday(habitId, date) {
   return template.includes(d);
 }
 async function saveWeekTemplate() {
+  lsSet('week_templates', state.weekTemplates);
   try { await setUserData('week_templates', state.weekTemplates); } catch (_) {}
 }
 function toggleWeekDay(day) {
@@ -177,15 +178,17 @@ async function toggleRestDay(habitId) {
   if (idx > -1) state.restDays[d].splice(idx, 1);
   else state.restDays[d].push(habitId);
   if (state.restDays[d].length === 0) delete state.restDays[d];
+  lsSet('rest_days', state.restDays);
   try { await setUserData('rest_days', state.restDays); } catch (_) {}
   renderToday();
 }
 
 // ─── HABIT PAIRS ──────────────────────────────────────────────
 function loadPairsFromUserData(data) {
-  state.pairs = data.habit_pairs || [];
+  state.pairs = data.habit_pairs || lsGet('habit_pairs', []);
 }
 async function savePairs() {
+  lsSet('habit_pairs', state.pairs);
   try { await setUserData('habit_pairs', state.pairs); } catch (_) {}
 }
 function isPairedTrigger(habitId) {
@@ -363,18 +366,13 @@ async function showApp(user) {
     try {
       const userData = await loadAllUserData();
       if (userData.limitless_today_snapshot) state.limitlessSnapshot = userData.limitless_today_snapshot;
-      if (userData.limitless_widget_on === false) {
-        state.limitlessWidgetOn = false;
-      } else if (userData.limitless_widget_on === true) {
-        state.limitlessWidgetOn = true;
-      } else {
-        state.limitlessWidgetOn = false;
-      }
-      if (userData.habit_stacks) state.stacks = userData.habit_stacks;
-      if (userData.habit_goals) state.habitGoals = userData.habit_goals;
-      if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
-      if (userData.intentions) state.intentions = userData.intentions;
-      if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
+      state.limitlessWidgetOn = userData.limitless_widget_on === true ? true
+        : lsGet('limitless_widget_on', false);
+      state.stacks = userData.habit_stacks || lsGet('habit_stacks', []);
+      state.habitGoals = userData.habit_goals || lsGet('habit_goals', {});
+      state.timeCapsules = userData.time_capsules || lsGet('time_capsules', {});
+      state.intentions = userData.intentions || lsGet('intentions', {});
+      state.streakArchaeology = userData.streak_archaeology || lsGet('streak_archaeology', {});
       if (userData.witness_settings) state.witnessSettings = userData.witness_settings;
       else state.witnessSettings = { mode_on: true, my_witness: { user_id: null, name: '', email: '', status: 'none' }, witness_requests: [], i_witness: [], last_notified_date: '', notifications: [] };
     } catch (_) {}
@@ -419,18 +417,13 @@ async function showApp(user) {
             } else {
               await fetchLimitlessFallback();
             }
-            if (userData.limitless_widget_on === false) {
-              state.limitlessWidgetOn = false;
-            } else if (userData.limitless_widget_on === true) {
-              state.limitlessWidgetOn = true;
-            } else {
-              state.limitlessWidgetOn = false;
-            }
-            if (userData.habit_stacks) state.stacks = userData.habit_stacks;
-            if (userData.habit_goals) state.habitGoals = userData.habit_goals;
-            if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
-            if (userData.intentions) state.intentions = userData.intentions;
-            if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
+            state.limitlessWidgetOn = userData.limitless_widget_on === true ? true
+              : lsGet('limitless_widget_on', false);
+            state.stacks = userData.habit_stacks || lsGet('habit_stacks', []);
+            state.habitGoals = userData.habit_goals || lsGet('habit_goals', {});
+            state.timeCapsules = userData.time_capsules || lsGet('time_capsules', {});
+            state.intentions = userData.intentions || lsGet('intentions', {});
+            state.streakArchaeology = userData.streak_archaeology || lsGet('streak_archaeology', {});
             if (userData.witness_settings) state.witnessSettings = userData.witness_settings;
           } catch (_) {}
         }
@@ -474,12 +467,12 @@ async function loadAll(opts = {}) {
       try {
         const userData = await loadAllUserData();
         loadPairsFromUserData(userData);
-        if (userData.rest_days) state.restDays = userData.rest_days;
-        if (userData.week_templates) state.weekTemplates = userData.week_templates;
-        if (userData.habit_goals) state.habitGoals = userData.habit_goals;
-        if (userData.time_capsules) state.timeCapsules = userData.time_capsules;
-        if (userData.intentions) state.intentions = userData.intentions;
-        if (userData.streak_archaeology) state.streakArchaeology = userData.streak_archaeology;
+        state.restDays = userData.rest_days || lsGet('rest_days', {});
+        state.weekTemplates = userData.week_templates || lsGet('week_templates', {});
+        state.habitGoals = userData.habit_goals || lsGet('habit_goals', {});
+        state.timeCapsules = userData.time_capsules || lsGet('time_capsules', {});
+        state.intentions = userData.intentions || lsGet('intentions', {});
+        state.streakArchaeology = userData.streak_archaeology || lsGet('streak_archaeology', {});
         if (userData.witness_settings) state.witnessSettings = userData.witness_settings;
       } catch (_) {}
     }
@@ -877,6 +870,7 @@ function loadStacks() {
 }
 async function saveStacks(stacks) {
   state.stacks = stacks;
+  lsSet('habit_stacks', stacks);
   try { await setUserData('habit_stacks', stacks); } catch (_) {}
 }
 
@@ -1905,6 +1899,9 @@ async function handleDeleteHabit(id) {
   delete state.habitGoals[id];
   delete state.timeCapsules[id];
   delete state.streakArchaeology[id];
+  lsSet('habit_goals', state.habitGoals);
+  lsSet('time_capsules', state.timeCapsules);
+  lsSet('streak_archaeology', state.streakArchaeology);
   try { await Promise.allSettled([
     setUserData('habit_goals', state.habitGoals),
     setUserData('time_capsules', state.timeCapsules),
@@ -2364,11 +2361,13 @@ function calcGoalProgress(habitId) {
 
 async function saveGoal(habitId, goalData) {
   state.habitGoals[habitId] = goalData;
+  lsSet('habit_goals', state.habitGoals);
   try { await setUserData('habit_goals', state.habitGoals); } catch (_) {}
 }
 
 async function deleteGoal(habitId) {
   delete state.habitGoals[habitId];
+  lsSet('habit_goals', state.habitGoals);
   try { await setUserData('habit_goals', state.habitGoals); } catch (_) {}
 }
 
@@ -2459,6 +2458,7 @@ async function saveCapsule(habitId, message) {
       last_shown_milestone: state.timeCapsules[habitId]?.last_shown_milestone || 0,
     };
   }
+  lsSet('time_capsules', state.timeCapsules);
   try { await setUserData('time_capsules', state.timeCapsules); } catch (_) {}
 }
 
@@ -2503,6 +2503,7 @@ function renderTimeCapsules() {
   });
   // Persist updates
   if (capsules.length > 0) {
+    lsSet('time_capsules', state.timeCapsules);
     setTimeout(() => setUserData('time_capsules', state.timeCapsules).catch(() => {}), 500);
   }
 }
@@ -2515,6 +2516,7 @@ async function saveIntention(date, type, value) {
   if (!state.intentions[date]) state.intentions[date] = { morning: '', evening: '', evening_answered: false };
   if (type === 'morning') state.intentions[date].morning = value;
   else if (type === 'evening') { state.intentions[date].evening = value; state.intentions[date].evening_answered = true; }
+  lsSet('intentions', state.intentions);
   try { await setUserData('intentions', state.intentions); } catch (_) {}
 }
 
@@ -2674,6 +2676,7 @@ async function updateStreakArchaeology(habitId) {
     shown: false,
   };
 
+  lsSet('streak_archaeology', state.streakArchaeology);
   try { await setUserData('streak_archaeology', state.streakArchaeology); } catch (_) {}
 }
 
@@ -2722,6 +2725,7 @@ function renderStreakEulogy() {
 function dismissEulogy(habitId) {
   if (state.streakArchaeology[habitId]) {
     state.streakArchaeology[habitId].shown = true;
+    lsSet('streak_archaeology', state.streakArchaeology);
     setUserData('streak_archaeology', state.streakArchaeology).catch(() => {});
   }
   renderStreakEulogy();
@@ -3464,6 +3468,7 @@ function bindEvents() {
     state.limitlessWidgetOn = next;
     $('limitless-widget-toggle').textContent = next ? 'ON' : 'OFF';
     $('limitless-widget-toggle').className = next ? 'widget-toggle-btn' : 'widget-toggle-btn off';
+    lsSet('limitless_widget_on', next);
     try { await setUserData('limitless_widget_on', next); } catch (_) {}
     renderView();
     showToast(next ? 'Limitless widget visible' : 'Limitless widget hidden');
@@ -3584,6 +3589,12 @@ function bindEvents() {
     }
     showToast(state.witnessSettings.mode_on ? 'Witness Mode ON' : 'Witness Mode OFF');
   });
+
+  // ══ IMPORT / EXPORT ════════════════════════════════════════════
+  $('ritual-export-csv')?.addEventListener('click', exportRitualCSV);
+  $('ritual-export-xlsx')?.addEventListener('click', exportRitualXLSX);
+  $('ritual-import-btn')?.addEventListener('click', () => $('ritual-import-input')?.click());
+  $('ritual-import-input')?.addEventListener('change', handleRitualImport);
 }
 
 async function handleTimeSuggestion(habitId, newTime) {
@@ -3593,6 +3604,140 @@ async function handleTimeSuggestion(habitId, newTime) {
     renderView();
     showToast('Time updated to ' + newTime);
   } catch(e) { showToast('Failed to update time'); }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  IMPORT / EXPORT
+// ═══════════════════════════════════════════════════════════════
+
+const RITUAL_EXPORT_COLS = ['id','user_id','name','icon','type','target','unit','time_of_day','color','sort_order','created_at'];
+const RITUAL_LOG_COLS = ['id','user_id','habit_id','log_date','value','note','created_at'];
+const RITUAL_SIG = ['name','icon','type','target','unit'];
+
+function _dl(text, name, mime) {
+  const blob = new Blob([text], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function exportRitualCSV() {
+  try {
+    const habits = await _fetchAll('habits');
+    const logs = await _fetchAll('habit_logs');
+    _dl(_csv(habits, RITUAL_EXPORT_COLS), 'ritual_habits.csv', 'text/csv');
+    _dl(_csv(logs, RITUAL_LOG_COLS), 'ritual_habit_logs.csv', 'text/csv');
+    showToast('Downloaded: ritual_habits.csv + ritual_habit_logs.csv');
+  } catch(e) { showToast('Export failed: ' + e.message); }
+}
+
+async function exportRitualXLSX() {
+  try {
+    if (typeof XLSX === 'undefined') { showToast('Loading SheetJS…'); return; }
+    const habits = await _fetchAll('habits');
+    const logs = await _fetchAll('habit_logs');
+    const wb = XLSX.utils.book_new();
+    wb.SheetNames.push('Habits');
+    wb.Sheets['Habits'] = XLSX.utils.json_to_sheet(habits.map(r => _pick(r, RITUAL_EXPORT_COLS)));
+    wb.SheetNames.push('Habit Logs');
+    wb.Sheets['Habit Logs'] = XLSX.utils.json_to_sheet(logs.map(r => _pick(r, RITUAL_LOG_COLS)));
+    XLSX.writeFile(wb, 'ritual_export.xlsx');
+    showToast('Downloaded: ritual_export.xlsx');
+  } catch(e) { showToast('Export failed: ' + e.message); }
+}
+
+async function handleRitualImport(e) {
+  const file = e.target?.files?.[0];
+  if (!file) return;
+  e.target.value = '';
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    let rows;
+    if (ext === 'csv') rows = _parseCSV(await file.text());
+    else if (ext === 'xlsx') rows = _parseXLSX(await file.arrayBuffer());
+    else { showToast('Unsupported file type. Use .csv or .xlsx'); return; }
+    if (!rows || !rows.length) { showToast('Empty file'); return; }
+
+    const sig = Object.keys(rows[0]).map(k => k.toLowerCase().trim());
+    const isRitual = RITUAL_SIG.some(s => sig.includes(s));
+    if (!isRitual) { showToast('Not a valid Ritual export file'); return; }
+
+    const habits = rows.filter(r => RITUAL_SIG.some(s => r[s] !== undefined));
+    const logCols = ['habit_id','log_date','value'];
+    const logs = rows.filter(r => logCols.some(s => r[s] !== undefined));
+
+    let imported = 0;
+    const sb = window.__sb;
+    if (!sb || !currentUser) { showToast('Not authenticated'); return; }
+    if (habits.length) {
+      for (const h of habits) {
+        const { id, user_id, created_at, ...rest } = h;
+        try { await sb.from('habits').insert({ ...rest, user_id: currentUser.id }); imported++; } catch(_) {}
+      }
+    }
+    if (logs.length) {
+      for (const l of logs) {
+        const { id, user_id, created_at, ...rest } = l;
+        try { await sb.from('habit_logs').insert({ ...rest, user_id: currentUser.id }); imported++; } catch(_) {}
+      }
+    }
+    showToast(`Imported ${imported} rows`);
+    if (imported > 0) { await loadAll(); renderView(); }
+  } catch(e) { showToast('Import failed: ' + e.message); }
+}
+
+function _csv(data, cols) {
+  const esc = v => { const s = v == null ? '' : String(v); return s.includes(',') || s.includes('"') ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  return [cols.join(','), ...data.map(r => cols.map(c => esc(r[c])).join(','))].join('\n');
+}
+
+function _pick(obj, cols) {
+  const r = {};
+  cols.forEach(c => { if (obj[c] !== undefined) r[c] = obj[c]; });
+  return r;
+}
+
+function _parseCSV(text) {
+  const lines = text.trim().split('\n');
+  if (!lines.length) return [];
+  const cols = lines[0].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = [];
+    let inQ = false, cur = '';
+    for (const ch of lines[i]) {
+      if (ch === '"') { inQ = !inQ; continue; }
+      if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; continue; }
+      cur += ch;
+    }
+    vals.push(cur.trim());
+    const row = {};
+    cols.forEach((c, idx) => { if (vals[idx] !== undefined) row[c.trim()] = vals[idx]; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function _parseXLSX(buf) {
+  const wb = XLSX.read(buf, { type: 'array' });
+  const rows = [];
+  wb.SheetNames.forEach(sn => {
+    const sheet = wb.Sheets[sn];
+    if (!sheet) return;
+    const data = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+    data.forEach(r => rows.push(r));
+  });
+  return rows;
+}
+
+async function _fetchAll(table) {
+  const sb = window.__sb;
+  if (!sb || !currentUser) throw new Error('Not authenticated');
+  const { data, error } = await sb.from(table).select('*').eq('user_id', currentUser.id).order('created_at');
+  if (error) throw error;
+  return data || [];
 }
 
 document.addEventListener('DOMContentLoaded', init);

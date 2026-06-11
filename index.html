@@ -424,22 +424,37 @@
         </div>
       </section>
 
-      <!-- Export -->
-      <section class="settings-section">
-        <div class="settings-section-header">
-          <span class="settings-section-icon">◧</span>
-          <span>Export</span>
+  <!-- Import / Export -->
+  <section class="settings-section">
+    <div class="settings-section-header">
+      <span class="settings-section-icon">◧</span>
+      <span>Import / Export</span>
+    </div>
+    <div class="settings-card">
+      <div class="settings-card-row row-action">
+        <div class="settings-row-text">
+          <div class="settings-row-label">Export as CSV</div>
+          <div class="settings-row-sub">Download habits &amp; logs as .csv files.</div>
         </div>
-        <div class="settings-card">
-          <div class="settings-card-row row-action">
-            <div class="settings-row-text">
-              <div class="settings-row-label">Habits & Logs</div>
-              <div class="settings-row-sub">Download all your data as a .txt file.</div>
-            </div>
-            <button class="btn-ghost small" id="settings-export-btn">Export</button>
-          </div>
+        <button class="btn-ghost small" id="ritual-export-csv">Download CSV</button>
+      </div>
+      <div class="settings-card-row row-action">
+        <div class="settings-row-text">
+          <div class="settings-row-label">Export as Excel</div>
+          <div class="settings-row-sub">Download habits &amp; logs as .xlsx (multiple sheets).</div>
         </div>
-      </section>
+        <button class="btn-ghost small" id="ritual-export-xlsx">Download XLSX</button>
+      </div>
+      <div class="settings-card-row row-action">
+        <div class="settings-row-text">
+          <div class="settings-row-label">Import Data</div>
+          <div class="settings-row-sub">Restore habits &amp; logs from .csv or .xlsx file.</div>
+        </div>
+        <input type="file" id="ritual-import-input" accept=".csv,.xlsx" style="display:none" />
+        <button class="btn-ghost small" id="ritual-import-btn">Choose File</button>
+      </div>
+    </div>
+  </section>
 
       <!-- App Info -->
       <section class="settings-section">
@@ -851,10 +866,11 @@
   <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="js/config.js?v=3"></script>
-<script src="js/db.js?v=3"></script>
-<script src="js/notifications.js?v=3"></script>
-<script src="js/app.js?v=3"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<script src="js/config.js?v=4"></script>
+<script src="js/db.js?v=4"></script>
+<script src="js/notifications.js?v=4"></script>
+<script src="js/app.js?v=5"></script>
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js?v=3');

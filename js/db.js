@@ -18,13 +18,13 @@ function initSupabase() {
         autoRefreshToken: true,
       },
     });
+    window.__sb = _sb;
     return true;
   } catch (e) {
     console.warn('Supabase init failed:', e);
     return false;
   }
 }
-
 // ─── AUTH — GOOGLE ───────────────────────────────────────────
 async function signInWithGoogle() {
   if (!_sb) throw new Error('Supabase not configured');
@@ -344,6 +344,18 @@ async function _queueDeleteLog(habitId, dateStr) {
   if (!_sb || !currentUser) throw Error('No auth');
   const { error } = await _sb.from('habit_logs').delete().eq('user_id', currentUser.id).eq('habit_id', habitId).eq('date', dateStr);
   if (error) throw error;
+}
+
+// ─── LOCAL STORAGE HELPERS (for local-only user data) ──────
+const LS_PREFIX = 'ritual_';
+function lsGet(key, def) {
+  try { const r = localStorage.getItem(LS_PREFIX + key); return r ? JSON.parse(r) : def; } catch { return def; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch {}
+}
+function lsRemove(key) {
+  try { localStorage.removeItem(LS_PREFIX + key); } catch {}
 }
 
 // ─── USER DATA (shared key-value sync with Limitless) ──────
