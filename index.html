@@ -9,6 +9,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Ritual" />
+  <link rel="icon" href="icons/icon-192.png" />
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <title>Ritual — Habit Tracker</title>
@@ -55,7 +56,7 @@
 
     <div class="auth-divider"><span>or</span></div>
 
-    <div class="auth-email-form">
+    <form class="auth-email-form" novalidate onsubmit="event.preventDefault(); document.getElementById('email-action-btn').click();">
       <div class="field-group">
         <input type="email" id="auth-email" placeholder="your@email.com" autocomplete="email" />
       </div>
@@ -76,7 +77,7 @@
         <button class="btn-link" id="auth-switch-btn">Create one</button>
       </div>
       <button class="btn-link small" id="auth-forgot-btn">Forgot password?</button>
-    </div>
+    </form>
 
     <p class="auth-note">Same account as Limitless.<br/>Your data syncs across all devices.</p>
 

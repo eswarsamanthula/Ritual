@@ -286,7 +286,8 @@ async function init() {
       onAuthChange(async (session, event) => {
         try {
           if (!session) {
-            if (event === 'SIGNED_OUT') { _showAppGuard = false; showAuth(); }
+            showAuth();
+            if (event === 'SIGNED_OUT') { _showAppGuard = false; }
             return;
           }
           localStorage.setItem('limitless_logged_in', '1');
