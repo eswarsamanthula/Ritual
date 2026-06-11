@@ -1467,12 +1467,12 @@ async function ensureHeatmapData() {
     const from = new Date();
     from.setFullYear(from.getFullYear() - 1);
     state.yearLogs = await getLogsRange(dateStr(from), todayStr());
-    state._heatmapLoaded = true;
     cacheSave('yearLogs', state.yearLogs);
   } catch (_) {
     const cached = cacheLoad('yearLogs');
     if (cached) state.yearLogs = cached;
   } finally {
+    state._heatmapLoaded = true;
     _heatmapLoading = false;
   }
 }

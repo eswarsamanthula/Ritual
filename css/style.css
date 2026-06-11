@@ -1443,9 +1443,14 @@ body::before {
   .sidebar {
     transform: translateX(-100%);
     width: 240px;
+    padding: 1.25rem 1rem 1.25rem 1.25rem;
   }
   .sidebar.open { transform: translateX(0); }
   .sidebar-close { display: block; }
+  .sidebar-header { padding: 0 0 1rem 0; border-bottom: none; }
+  .sidebar-nav { padding: 0; }
+  .nav-item { padding: 0.5rem 0; }
+  .sidebar-footer { padding: 0.75rem 0; }
   .main-content { margin-left: 0; }
   .hamburger { display: flex; }
   .view { padding: 1rem; }
