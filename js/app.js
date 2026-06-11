@@ -1759,14 +1759,27 @@ async function handleDeleteHabit(id) {
 }
 
 // ─── MODALS ──────────────────────────────────────────────────
+let _modalOpenCount = 0;
 function openModal(id) {
+  // Close any other open modals first to prevent stacking
+  $$('.modal-backdrop.open').forEach(m => {
+    if (m.id !== id) m.classList.remove('open');
+  });
   $(`${id}`)?.classList.add('open');
-  document.body.style.overflow = 'hidden';
+  _modalOpenCount = $$('.modal-backdrop.open').length;
+  document.body.style.overflow = _modalOpenCount > 0 ? 'hidden' : '';
 }
 function closeModal(id) {
   $(`${id}`)?.classList.remove('open');
-  document.body.style.overflow = '';
+  _modalOpenCount = $$('.modal-backdrop.open').length;
+  document.body.style.overflow = _modalOpenCount > 0 ? 'hidden' : '';
 }
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const openModals = $$('.modal-backdrop.open');
+    if (openModals.length) closeModal(openModals[openModals.length - 1].id);
+  }
+});
 
 // ─── THEME ───────────────────────────────────────────────────
 function resolveTheme(saved) {

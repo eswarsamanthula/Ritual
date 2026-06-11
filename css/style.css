@@ -621,6 +621,7 @@ body::after {
 
 /* Empty state inside heatmap */
 .heatmap-empty { padding: 2rem 1rem !important; }
+.heatmap-empty .empty-icon { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
 
 /* Weekly bars (matches Limitless layout) */
 .weekly-section { margin-top: 2rem; }
@@ -898,6 +899,11 @@ body::after {
   padding: 0.75rem 1.5rem;
   display: flex; align-items: center; gap: 0.75rem;
   font-size: 0.75rem; z-index: 300;
+  transition: transform .3s ease, opacity .3s ease;
+}
+.notif-banner.hidden { transform: translateY(100%); opacity: 0; pointer-events: none; }
+@media (min-width: 769px) {
+  .notif-banner { left: var(--sidebar-w); }
 }
 .notif-banner button {
   background: var(--accent); color: var(--bg);
@@ -1560,4 +1566,17 @@ body::after {
   .heatmap-horiz { display: none; }
   .heatmap-vert { display: flex; flex-direction: column; gap: 3px; }
   .modal-body { padding-bottom: 2rem; }
+}
+
+/* ─── A11Y ───────────────────────────────────────────────── */
+*:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--radius-sm); }
+button:focus:not(:focus-visible) { outline: none; }
+
+/* Touch targets for touch devices */
+@media (pointer: coarse) {
+  .nav-item, .btn-primary, .btn-ghost, .btn-icon-sm, .modal-close, .toggle-pw,
+  .skip-reason-btn, .habit-check, .weekday-btn, .color-dot, .type-btn, .icon-btn {
+    min-height: 44px; min-width: 44px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
 }

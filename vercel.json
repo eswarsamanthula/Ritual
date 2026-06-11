@@ -1,5 +1,8 @@
 {
   "buildCommand": "node build.js",
   "outputDirectory": ".",
-  "framework": null
+  "framework": null,
+  "redirects": [
+    { "source": "/favicon.ico", "destination": "/icons/icon-192.png", "permanent": true }
+  ]
 }
