@@ -3674,13 +3674,15 @@ async function handleRitualImport(e) {
     if (habits.length) {
       for (const h of habits) {
         const { id, user_id, created_at, ...rest } = h;
-        try { await sb.from('habits').insert({ ...rest, user_id: currentUser.id }); imported++; } catch(_) {}
+        const row = _normalizeHabit(rest);
+        try { await sb.from('habits').insert({ ...row, user_id: currentUser.id }); imported++; } catch(_) {}
       }
     }
     if (logs.length) {
       for (const l of logs) {
         const { id, user_id, created_at, ...rest } = l;
-        try { await sb.from('habit_logs').insert({ ...rest, user_id: currentUser.id }); imported++; } catch(_) {}
+        const row = _normalizeLog(rest);
+        try { await sb.from('habit_logs').insert({ ...row, user_id: currentUser.id }); imported++; } catch(_) {}
       }
     }
     showToast(`Imported ${imported} rows`);
@@ -3696,6 +3698,24 @@ function _csv(data, cols) {
 function _pick(obj, cols) {
   const r = {};
   cols.forEach(c => { if (obj[c] !== undefined) r[c] = obj[c]; });
+  return r;
+}
+function _normalizeHabit(row) {
+  const r = { ...row };
+  if (r.target === '' || r.target === undefined || r.target === null) r.target = null;
+  else if (typeof r.target === 'string') { const n = parseFloat(r.target); r.target = isNaN(n) ? null : n; }
+  if (r.sort_order === '' || r.sort_order === undefined || r.sort_order === null) r.sort_order = null;
+  else if (typeof r.sort_order === 'string') { const n = parseFloat(r.sort_order); r.sort_order = isNaN(n) ? null : n; }
+  ['time_of_day','color'].forEach(k => {
+    if (r[k] === '' || r[k] === undefined) r[k] = null;
+  });
+  return r;
+}
+function _normalizeLog(row) {
+  const r = { ...row };
+  if (r.value === '' || r.value === undefined || r.value === null) r.value = null;
+  else if (typeof r.value === 'string') { const n = parseFloat(r.value); r.value = isNaN(n) ? null : n; }
+  if (r.note === '' || r.note === undefined) r.note = null;
   return r;
 }
 
