@@ -1,5 +1,5 @@
-# Local config (contains real keys — never commit)
-js/config.js
+# Local config template only
+js/config.example.js
 
 # Environment files
 .env
