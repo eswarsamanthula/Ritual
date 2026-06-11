@@ -16,7 +16,7 @@ const state = {
   logModalHabitId: null,
   pendingSkipHabitId: null, // for skip reason modal
   limitlessSnapshot: null,
-  limitlessWidgetOn: true,
+  limitlessWidgetOn: false,
   stacks: [],
   editingStackId: null,
   selectedStackIcon: '☀',
@@ -353,6 +353,8 @@ async function showApp(user) {
         state.limitlessWidgetOn = false;
       } else if (userData.limitless_widget_on === true) {
         state.limitlessWidgetOn = true;
+      } else {
+        state.limitlessWidgetOn = false;
       }
       if (userData.habit_stacks) state.stacks = userData.habit_stacks;
     } catch (_) {}
@@ -384,6 +386,8 @@ async function showApp(user) {
             state.limitlessWidgetOn = false;
           } else if (userData.limitless_widget_on === true) {
             state.limitlessWidgetOn = true;
+          } else {
+            state.limitlessWidgetOn = false;
           }
           if (userData.habit_stacks) state.stacks = userData.habit_stacks;
         } catch (_) {}
