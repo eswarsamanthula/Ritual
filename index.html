@@ -930,6 +930,10 @@
   <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
 </div>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  // Ensure Supabase is available on window (unpkg UMD bundle)
+  if (!window.supabase && window.supabaseLib) window.supabase = window.supabaseLib;
+</script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="js/config.js?v=5"></script>
 <script src="js/db.js?v=5"></script>
