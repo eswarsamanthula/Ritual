@@ -7,7 +7,7 @@ let _sb = null;
 let currentUser = null;
 let _channels = [];
 
-const _CACHE_V = '4'; // bump to clear all localStorage caches
+const _CACHE_V = '5'; // bump to clear all localStorage caches
 
 // ─── INIT ───────────────────────────────────────────────────
 function initSupabase() {
@@ -182,6 +182,80 @@ async function updateHabitTime(id, timeOfDay) {
   }
 }
 
+// ─── TASKS ──────────────────────────────────────────────────
+async function getTasks() {
+  if (!_sb || !currentUser) return [];
+  const { data, error } = await _sb
+    .from('tasks')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('sort_order', { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+async function saveTask(task) {
+  if (!_sb || !currentUser) throw new Error('Not authenticated');
+  const payload = {
+    title: task.title,
+    description: task.description || '',
+    due_date: task.due_date || null,
+    time_of_day: task.time_of_day || 'any',
+    priority: task.priority || 0,
+    status: task.status || 'pending',
+    sort_order: task.sort_order || 0,
+  };
+  try {
+    if (task.id) {
+      const { error } = await _sb.from('tasks')
+        .update(payload)
+        .eq('id', task.id)
+        .eq('user_id', currentUser.id);
+      if (error) throw error;
+      return { id: task.id };
+    } else {
+      const { data, error } = await _sb.from('tasks')
+        .insert({ ...payload, user_id: currentUser.id })
+        .select('id')
+        .single();
+      if (error) throw error;
+      return data;
+    }
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('saveTask', task); return { id: task.id || 'pending' }; }
+    throw e;
+  }
+}
+
+async function deleteTask(id) {
+  if (!_sb || !currentUser) throw new Error('Not authenticated');
+  try {
+    const { error } = await _sb.from('tasks')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', currentUser.id);
+    if (error) throw error;
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('deleteTask', id); return; }
+    throw e;
+  }
+}
+
+async function toggleTask(id, newStatus) {
+  if (!_sb || !currentUser) throw new Error('Not authenticated');
+  try {
+    const status = newStatus || (() => { const t = state.tasks.find(t => t.id === id); return t?.status === 'completed' ? 'pending' : 'completed'; })();
+    const { error } = await _sb.from('tasks')
+      .update({ status })
+      .eq('id', id)
+      .eq('user_id', currentUser.id);
+    if (error) throw error;
+  } catch (e) {
+    if (!navigator.onLine) { queueAdd('toggleTask', id); return; }
+    throw e;
+  }
+}
+
 async function reorderHabits(orderedIds) {
   if (!_sb || !currentUser) throw new Error('Not authenticated');
   try {
@@ -267,7 +341,7 @@ async function seedDefaultHabits() {
 function subscribeRealtime(callback) {
   if (!_sb || !currentUser) return;
   const uid = currentUser.id;
-  ['habits', 'habit_logs', 'user_data'].forEach(table => {
+  ['habits', 'habit_logs', 'tasks', 'user_data'].forEach(table => {
     const ch = _sb.channel(`ritual-${table}-${uid}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table, filter: `user_id=eq.${uid}` },
@@ -323,6 +397,9 @@ async function queueDrain() {
         case 'deleteHabit': await _queueDeleteHabit(item.payload); break;
         case 'upsertLog':  await _queueUpsertLog(item.payload.habitId, item.payload.dateStr, item.payload.value, item.payload.note); break;
         case 'deleteLog':  await _queueDeleteLog(item.payload.habitId, item.payload.dateStr); break;
+        case 'saveTask':   await _queueSaveTask(item.payload); break;
+        case 'deleteTask':  await _queueDeleteTask(item.payload); break;
+        case 'toggleTask':  await _queueToggleTask(item.payload); break;
       }
     } catch (_) { kept.push(item); }
   }
@@ -354,6 +431,29 @@ async function _queueUpsertLog(habitId, dateStr, value, note) {
 async function _queueDeleteLog(habitId, dateStr) {
   if (!_sb || !currentUser) throw Error('No auth');
   const { error } = await _sb.from('habit_logs').delete().eq('user_id', currentUser.id).eq('habit_id', habitId).eq('date', dateStr);
+  if (error) throw error;
+}
+async function _queueSaveTask(task) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const payload = { title: task.title, description: task.description || '', due_date: task.due_date || null, time_of_day: task.time_of_day || 'any', priority: task.priority || 0, status: task.status || 'pending', sort_order: task.sort_order || 0 };
+  if (task.id) {
+    const { error } = await _sb.from('tasks').update(payload).eq('id', task.id).eq('user_id', currentUser.id);
+    if (error) throw error;
+  } else {
+    const { data, error } = await _sb.from('tasks').insert({ ...payload, user_id: currentUser.id }).select('id').single();
+    if (error) throw error;
+  }
+}
+async function _queueDeleteTask(id) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const { error } = await _sb.from('tasks').delete().eq('id', id).eq('user_id', currentUser.id);
+  if (error) throw error;
+}
+async function _queueToggleTask(id) {
+  if (!_sb || !currentUser) throw Error('No auth');
+  const task = state.tasks.find(t => t.id === id);
+  const newStatus = task?.status === 'completed' ? 'pending' : 'completed';
+  const { error } = await _sb.from('tasks').update({ status: newStatus }).eq('id', id).eq('user_id', currentUser.id);
   if (error) throw error;
 }
 

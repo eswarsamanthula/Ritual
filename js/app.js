@@ -6,10 +6,13 @@
 // ─── STATE ───────────────────────────────────────────────────
 const state = {
   habits: [],
+  tasks: [],
   todayLogs: {},   // habitId → value
   yearLogs: [],    // all logs for heatmap
   currentView: 'today',
+  tasksFilter: 'all',
   editingHabitId: null,
+  editingTaskId: null,
   selectedColor: HABIT_PALETTE[0],
   selectedIcon: '◎',
   selectedType: 'checkbox',
@@ -440,12 +443,14 @@ async function loadAll(opts = {}) {
   const { silent = false } = opts;
   try {
     const from = new Date(); from.setFullYear(from.getFullYear() - 1);
-    const [habitsRes, logsRes, yearRes] = await Promise.allSettled([
+    const [habitsRes, logsRes, yearRes, tasksRes] = await Promise.allSettled([
       getHabits(),
       getTodayLogs(todayStr()),
       getLogsRange(dateStr(from), todayStr()),
+      getTasks(),
     ]);
     state.habits = habitsRes.value || [];
+    state.tasks = tasksRes.status === 'fulfilled' ? (tasksRes.value || []) : (cacheLoad('tasks') || []);
     state.yearLogs = yearRes.status === 'fulfilled' ? (yearRes.value || []) : (cacheLoad('yearLogs') || []);
     state._heatmapLoaded = true;
     state.todayLogs = {};
@@ -458,6 +463,7 @@ async function loadAll(opts = {}) {
 
     // Cache today data to localStorage for offline use
     cacheSave('habits', state.habits);
+    cacheSave('tasks', state.tasks);
     cacheSave('todayLogs', state.todayLogs);
     cacheSave('todayNotes', state.todayNotes);
     cacheSave('yearLogs', state.yearLogs);
@@ -482,10 +488,12 @@ async function loadAll(opts = {}) {
     if (!navigator.onLine) {
       // offline — restore from cache
       const habits = cacheLoad('habits');
+      const tasks = cacheLoad('tasks');
       const todayLogs = cacheLoad('todayLogs');
       const todayNotes = cacheLoad('todayNotes');
       const yearLogs = cacheLoad('yearLogs');
       if (habits) state.habits = habits;
+      if (tasks) state.tasks = tasks;
       if (todayLogs) state.todayLogs = todayLogs;
       if (todayNotes) state.todayNotes = todayNotes;
       if (yearLogs) state.yearLogs = yearLogs;
@@ -503,13 +511,14 @@ function switchView(view) {
   $(`view-${view}`)?.classList.add('active');
   $$('.nav-item').forEach(n => n.classList.remove('active'));
   document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
-  const titles = { today: 'Today', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings', correlations: 'Correlations', witness: 'Witness' };
+  const titles = { today: 'Today', tasks: 'Tasks', history: 'History', calendar: 'Calendar', stats: 'Stats', stacks: 'Stacks', habits: 'My Habits', settings: 'Settings', correlations: 'Correlations', witness: 'Witness' };
   $('view-title').textContent = titles[view] || view;
   renderView();
 }
 
 function renderView() {
   if (state.currentView === 'today') renderToday();
+  else if (state.currentView === 'tasks') renderTasksView();
   else if (state.currentView === 'history') renderHistory();
   else if (state.currentView === 'calendar') renderCalendar();
   else if (state.currentView === 'stats') renderStats();
@@ -557,6 +566,15 @@ function renderCalendar() {
     dayMap[log.date].logs.push(log);
   });
 
+  // Build task due date map
+  const taskDateMap = {};
+  state.tasks.forEach(t => {
+    if (t.due_date) {
+      if (!taskDateMap[t.due_date]) taskDateMap[t.due_date] = [];
+      taskDateMap[t.due_date].push(t);
+    }
+  });
+
   let html = `<div class="cal-nav">
     <button class="cal-nav-btn" onclick="navigateCalendar(-1)">←</button>
     <span class="cal-nav-title">${monthNames[month]} ${year}</span>
@@ -578,8 +596,10 @@ function renderCalendar() {
     const pct = entry ? Math.round((entry.done / entry.total) * 100) : 0;
     const level = !hasData ? 0 : pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : 1;
     const isToday = dateStr === todayStrDate;
+    const hasTasks = !!taskDateMap[dateStr];
     html += `<div class="cal-cell ${isToday ? 'cal-today' : ''} ${hasData ? 'has-data' : ''} cal-lvl-${level}" onclick="showDayDetail('${dateStr}', this)">
       <span class="cal-day-num">${d}</span>
+      ${hasTasks ? '<span class="cal-task-dot"></span>' : ''}
     </div>`;
   }
 
@@ -611,26 +631,45 @@ function showDayDetail(dateStr, el) {
   allLogs.forEach(l => {
     if (!seen.has(l.habit_id)) { seen.add(l.habit_id); unique.push(l); }
   });
-  if (unique.length === 0) {
+  let html = '';
+  if (unique.length > 0) {
+    html += unique.map(l => {
+      const h = state.habits.find(x => x.id === l.habit_id);
+      if (!h) return '';
+      const val = l.value || 0;
+      const complete = h.type === 'checkbox' ? val >= 1 : val >= h.target;
+      const time = l.logged_at ? new Date(l.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      return `<div class="cal-detail-row" style="border-left:3px solid ${h.color}">
+        <span class="cal-detail-icon">${h.icon}</span>
+        <div class="cal-detail-body">
+          <span class="cal-detail-name">${escHtml(h.name)}</span>
+          <span class="cal-detail-val">${complete ? '✓' : (h.type === 'checkbox' ? '✕' : val + '/' + h.target)}</span>
+          ${time ? `<span class="cal-detail-time">${time}</span>` : ''}
+          ${l.note ? `<span class="cal-detail-note">${escHtml(l.note)}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  // Show tasks due on this date
+  const dueTasks = state.tasks.filter(t => t.due_date === dateStr);
+  if (dueTasks.length > 0) {
+    html += `<div class="cal-detail-section-label">Tasks Due</div>`;
+    html += dueTasks.map(t => {
+      const done = t.status === 'completed';
+      return `<div class="cal-detail-row cal-task-row" style="border-left:3px solid ${done ? 'var(--green)' : 'var(--accent)'}">
+        <span class="cal-detail-icon">${done ? '✓' : '☐'}</span>
+        <div class="cal-detail-body">
+          <span class="cal-detail-name ${done ? 'cal-detail-done' : ''}">${escHtml(t.title)}</span>
+          ${t.priority > 0 ? '<span class="cal-detail-val" style="color:var(--accent-warm)">high</span>' : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+  if (!html) {
     panel.innerHTML = '<div class="cal-detail-empty">Nothing logged this day</div>';
     return;
   }
-  panel.innerHTML = unique.map(l => {
-    const h = state.habits.find(x => x.id === l.habit_id);
-    if (!h) return '';
-    const val = l.value || 0;
-    const complete = h.type === 'checkbox' ? val >= 1 : val >= h.target;
-    const time = l.logged_at ? new Date(l.logged_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    return `<div class="cal-detail-row" style="border-left:3px solid ${h.color}">
-      <span class="cal-detail-icon">${h.icon}</span>
-      <div class="cal-detail-body">
-        <span class="cal-detail-name">${escHtml(h.name)}</span>
-        <span class="cal-detail-val">${complete ? '✓' : (h.type === 'checkbox' ? '✕' : val + '/' + h.target)}</span>
-        ${time ? `<span class="cal-detail-time">${time}</span>` : ''}
-        ${l.note ? `<span class="cal-detail-note">${escHtml(l.note)}</span>` : ''}
-      </div>
-    </div>`;
-  }).join('');
+  panel.innerHTML = html;
 }
 
 // ─── TODAY VIEW ──────────────────────────────────────────────
@@ -679,6 +718,8 @@ function renderToday() {
   renderNextUp();
   // Stacks today widget
   renderStacksToday();
+  // Tasks today widget
+  renderTasksToday();
 
   // Streak sidebar badge
   renderStreakBadge();
@@ -1139,6 +1180,160 @@ async function deleteStack(id) {
   await saveStacks(stacks);
   renderView();
   showToast('Stack deleted');
+}
+
+// ─── TASKS TODAY WIDGET ────────────────────────────────────
+function renderTasksToday() {
+  const el = document.getElementById('tasks-today-widget');
+  if (!el) return;
+  const pending = state.tasks.filter(t => t.status === 'pending');
+  if (pending.length === 0) { el.innerHTML = ''; el.style.display = 'none'; return; }
+  el.style.display = '';
+  const todayDue = pending.filter(t => t.due_date === todayStr());
+  const other = pending.filter(t => t.due_date !== todayStr());
+  const sorted = [...todayDue.sort((a, b) => b.priority - a.priority), ...other.sort((a, b) => b.priority - a.priority)].slice(0, 6);
+  el.innerHTML = `<div class="tasks-today-header"><span class="tasks-today-title">Tasks Today</span><span class="tasks-today-count">${pending.length}</span></div>
+    <div class="tasks-today-list">
+      ${sorted.map(t => {
+        const isDue = t.due_date === todayStr();
+        const pCls = t.priority > 0 ? 'high' : t.priority < 0 ? 'low' : '';
+        const g = t.time_of_day === 'any' ? '' : t.time_of_day;
+        return `<div class="tasks-today-item ${pCls}">
+          <button class="task-check-today" onclick="handleToggleTask('${t.id}')">○</button>
+          <div class="tasks-today-info">
+            <span class="tasks-today-name">${escHtml(t.title)}</span>
+            ${g ? `<span class="tasks-today-time">${g}</span>` : ''}
+          </div>
+          ${isDue ? '<span class="tasks-today-due">Today</span>' : ''}
+        </div>`;
+      }).join('')}
+      ${pending.length > 6 ? `<button class="tasks-today-more" onclick="switchView('tasks')">+${pending.length - 6} more</button>` : ''}
+    </div>`;
+}
+
+// ─── TASKS VIEW ────────────────────────────────────────────
+function renderTasksView() {
+  const list = $('tasks-list');
+  if (!list) return;
+  const filter = state.tasksFilter || 'all';
+  const filtered = state.tasks.filter(t => filter === 'all' ? true : t.status === filter);
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state">
+      <svg width="72" height="72" viewBox="0 0 72 72" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.5rem;opacity:.6">
+        <rect x="14" y="14" width="44" height="10" rx="3" stroke="var(--border)"/>
+        <rect x="14" y="30" width="44" height="10" rx="3" stroke="var(--accent)"/>
+        <rect x="14" y="46" width="44" height="10" rx="3" stroke="var(--text-faint)" stroke-width="1"/>
+      </svg>
+      <p>${filter === 'all' ? 'No tasks yet.<br/>Add a task to get started.' : filter === 'completed' ? 'No completed tasks yet.' : 'All tasks done! 🎉'}</p>
+      <button class="btn-primary" onclick="openTaskModal(null)">+ Add Task</button>
+    </div>`;
+    return;
+  }
+  const groups = { morning: [], afternoon: [], evening: [], any: [] };
+  filtered.forEach(t => groups[t.time_of_day]?.push(t));
+  const groupOrder = ['morning', 'afternoon', 'evening', 'any'];
+  const groupLabels = { morning: '☀ Morning', afternoon: '◑ Afternoon', evening: '◐ Evening', any: '◎ Anytime' };
+  list.innerHTML = groupOrder.map(g => {
+    if (!groups[g] || groups[g].length === 0) return '';
+    const items = groups[g].sort((a, b) => b.priority - a.priority).map(t => {
+      const pCls = t.priority > 0 ? 'high' : t.priority < 0 ? 'low' : '';
+      const isDue = t.due_date === todayStr();
+      const deadline = t.due_date ? (isDue ? 'Today' : formatDate(new Date(t.due_date + 'T12:00:00'))) : '';
+      return `<div class="task-card ${t.status} ${pCls}" style="--hc:${t.priority > 0 ? 'var(--accent-warm)' : 'var(--accent)'}">
+        <button class="task-check" onclick="handleToggleTask('${t.id}')" style="--hc:${t.priority > 0 ? 'var(--accent-warm)' : 'var(--accent)'}">${t.status === 'completed' ? '✓' : '○'}</button>
+        <div class="task-body">
+          <div class="task-title">${escHtml(t.title)}</div>
+          ${t.description ? `<div class="task-desc">${escHtml(t.description)}</div>` : ''}
+          <div class="task-meta">
+            ${deadline ? `<span class="task-due ${isDue ? 'urgent' : ''}">${deadline}</span>` : ''}
+            ${t.priority > 0 ? '<span class="task-priority-badge">!</span>' : ''}
+          </div>
+        </div>
+        <div class="task-actions">
+          <button class="task-edit-btn" onclick="openTaskModal('${t.id}')" title="Edit">✎</button>
+          <button class="task-del-btn" onclick="handleDeleteTask('${t.id}')" title="Delete">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="group-section"><div class="group-label">${groupLabels[g]}</div><div class="task-cards">${items}</div></div>`;
+  }).join('');
+}
+
+// ─── TASK MODAL ────────────────────────────────────────────
+function openTaskModal(taskId) {
+  state.editingTaskId = taskId || null;
+  const task = taskId ? state.tasks.find(t => t.id === taskId) : null;
+  $('modal-task-title').textContent = task ? 'Edit Task' : 'Add Task';
+  $('task-title-input').value = task?.title || '';
+  $('task-desc-input').value = task?.description || '';
+  $('task-due-input').value = task?.due_date || '';
+  $('task-time-select').value = task?.time_of_day || 'any';
+  const prio = task?.priority || 0;
+  $$('#task-priority-toggle .type-btn').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.priority) === prio));
+  $('task-delete-btn').style.display = task ? '' : 'none';
+  openModal('modal-task');
+  setTimeout(() => $('task-title-input')?.focus(), 100);
+}
+
+async function handleSaveTask() {
+  const title = $('task-title-input').value.trim();
+  if (!title) { showToast('Enter a task title'); return; }
+  const desc = $('task-desc-input').value.trim();
+  const due = $('task-due-input').value || null;
+  const timeOfDay = $('task-time-select').value;
+  const prioEl = document.querySelector('#task-priority-toggle .type-btn.selected');
+  const priority = parseInt(prioEl?.dataset?.priority || '0');
+  const task = {
+    id: state.editingTaskId,
+    title,
+    description: desc,
+    due_date: due,
+    time_of_day: timeOfDay,
+    priority,
+    status: state.editingTaskId ? (state.tasks.find(t => t.id === state.editingTaskId)?.status || 'pending') : 'pending',
+    sort_order: state.editingTaskId ? (state.tasks.find(t => t.id === state.editingTaskId)?.sort_order || 0) : state.tasks.length,
+  };
+  try {
+    await saveTask(task);
+    closeModal('modal-task');
+    await loadAll();
+    renderView();
+    showToast(state.editingTaskId ? 'Task updated ✓' : 'Task added ✓');
+  } catch (e) {
+    showToast('Failed to save task: ' + (e.message || ''));
+  }
+}
+
+async function handleDeleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  try {
+    await deleteTask(id);
+    await loadAll();
+    renderView();
+    showToast('Task deleted');
+  } catch (e) {
+    showToast('Failed to delete task');
+  }
+}
+
+async function handleToggleTask(id) {
+  haptic();
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+  // Optimistic
+  task.status = newStatus;
+  if (state.currentView === 'tasks') renderTasksView();
+  else if (state.currentView === 'today') renderToday();
+  try {
+    await toggleTask(id, newStatus);
+    await loadAll({ silent: true });
+  } catch (e) {
+    showToast('Failed to update task');
+    await loadAll();
+    if (state.currentView === 'tasks') renderTasksView();
+    else if (state.currentView === 'today') renderToday();
+  }
 }
 
 function buildHabitCard(h, idx = 0) {
@@ -3223,6 +3418,7 @@ function bindEvents() {
   $('signout-btn')?.addEventListener('click', async () => {
     await signOut();
     state.habits = [];
+    state.tasks = [];
     state.todayLogs = {};
     state.yearLogs = [];
     if (typeof clearReminders === 'function') clearReminders();
@@ -3273,6 +3469,7 @@ function bindEvents() {
   $('topbar-action')?.addEventListener('click', () => {
     if (state.currentView === 'habits') openHabitModal(null);
     else if (state.currentView === 'today') openHabitModal(null);
+    else if (state.currentView === 'tasks') openTaskModal(null);
     else switchView('habits');
   });
 
@@ -3479,7 +3676,7 @@ function bindEvents() {
 
   // Delete all data
   $('settings-delete-all-btn')?.addEventListener('click', async () => {
-    if (!confirm('Delete ALL your habits and logs? This cannot be undone.')) return;
+    if (!confirm('Delete ALL your habits, logs, and tasks? This cannot be undone.')) return;
     if (!confirm('Are you sure? This is permanent.')) return;
     try {
       for (const h of state.habits) {
@@ -3487,7 +3684,9 @@ function bindEvents() {
         if (error) throw error;
         await _sb.from('habits').delete().eq('id', h.id).eq('user_id', currentUser.id);
       }
+      await _sb.from('tasks').delete().eq('user_id', currentUser.id);
       state.habits = [];
+      state.tasks = [];
       state.todayLogs = {};
       state.yearLogs = [];
       await loadAll();
@@ -3503,6 +3702,7 @@ function bindEvents() {
     if (!confirm('Sign out?')) return;
     await signOut();
     state.habits = [];
+    state.tasks = [];
     state.todayLogs = {};
     state.yearLogs = [];
     showAuth();
@@ -3595,6 +3795,31 @@ function bindEvents() {
   $('ritual-export-xlsx')?.addEventListener('click', exportRitualXLSX);
   $('ritual-import-btn')?.addEventListener('click', () => $('ritual-import-input')?.click());
   $('ritual-import-input')?.addEventListener('change', handleRitualImport);
+
+  // ══ TASK EVENTS ═══════════════════════════════════════════════
+  $('save-task-btn')?.addEventListener('click', handleSaveTask);
+  $('task-title-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') handleSaveTask(); });
+  $('task-delete-btn')?.addEventListener('click', () => {
+    if (state.editingTaskId) handleDeleteTask(state.editingTaskId);
+  });
+
+  // Task priority picker
+  $$('#task-priority-toggle .type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      $$('#task-priority-toggle .type-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+  });
+
+  // Task filter buttons
+  $$('.tasks-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.tasksFilter = btn.dataset.tasksFilter;
+      $$('.tasks-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTasksView();
+    });
+  });
 }
 
 async function handleTimeSuggestion(habitId, newTime) {

@@ -1,10 +1,10 @@
-const CACHE = 'ritual-v4';
+const CACHE = 'ritual-v5';
 const ASSETS = [
-  '/', '/index.html?v=4',
-  '/js/supabase.js?v=4', '/js/app.js?v=4', '/js/db.js?v=4', '/js/config.js?v=4', '/js/notifications.js?v=4',
-  '/css/style.css?v=4',
-  '/icons/icon-192.png?v=4', '/icons/icon-512.png?v=4',
-  '/manifest.json?v=4',
+  '/', '/index.html?v=5',
+  '/js/supabase.js?v=5', '/js/app.js?v=5', '/js/db.js?v=5', '/js/config.js?v=5', '/js/notifications.js?v=5',
+  '/css/style.css?v=5',
+  '/icons/icon-192.png?v=5', '/icons/icon-512.png?v=5',
+  '/manifest.json?v=5',
   'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap',
 ];
 

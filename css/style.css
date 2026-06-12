@@ -2024,3 +2024,58 @@ button:focus:not(:focus-visible) { outline: none; }
 .witness-notif-dismiss { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 0.75rem; padding: 0.15rem; flex-shrink: 0; }
 .witness-notif-dismiss:hover { color: var(--text); }
 .witness-notif-empty { text-align: center; padding: 2rem; font-size: 0.8rem; color: var(--text-faint); }
+
+/* ══ FIELD ROW ═══════════════════════════════════════════ */
+.field-row { display: flex; gap: 0.75rem; }
+.field-row .flex-1 { flex: 1; }
+.field-row .flex-0 { flex: 0 0 auto; }
+
+/* ══ TASKS ════════════════════════════════════════════════ */
+.tasks-toolbar { display: flex; gap: 0.4rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.tasks-filter-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.3rem 0.7rem; font-size: 0.72rem; color: var(--text-faint); cursor: pointer; font-family: var(--font-mono); transition: var(--transition); }
+.tasks-filter-btn:hover { border-color: var(--accent); color: var(--text); }
+.tasks-filter-btn.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.task-cards { display: flex; flex-direction: column; gap: 0.5rem; }
+.task-card { display: flex; align-items: flex-start; gap: 0.65rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.6rem 0.75rem; transition: var(--transition); }
+.task-card:hover { border-color: var(--accent-dim); }
+.task-card.completed { opacity: .55; }
+.task-card.completed .task-title { text-decoration: line-through; color: var(--text-faint); }
+.task-card.high { border-left: 3px solid var(--accent-warm); }
+.task-check { flex-shrink: 0; width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 2px solid var(--accent); background: none; color: var(--accent); font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; margin-top: 0.15rem; transition: var(--transition); }
+.task-check:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.task-card.completed .task-check { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+.task-body { flex: 1; min-width: 0; }
+.task-title { font-size: 0.82rem; color: var(--text); line-height: 1.4; }
+.task-desc { font-size: 0.7rem; color: var(--text-faint); margin-top: 0.15rem; line-height: 1.35; }
+.task-meta { display: flex; gap: 0.4rem; margin-top: 0.25rem; flex-wrap: wrap; }
+.task-due { font-size: 0.65rem; color: var(--text-faint); background: var(--bg-subtle); padding: 0.1rem 0.4rem; border-radius: var(--radius-sm); }
+.task-due.urgent { color: var(--accent-warm); background: color-mix(in srgb, var(--accent-warm) 10%, transparent); }
+.task-priority-badge { font-size: 0.65rem; color: var(--accent-warm); background: color-mix(in srgb, var(--accent-warm) 10%, transparent); padding: 0.1rem 0.4rem; border-radius: 50%; font-weight: 500; }
+.task-actions { display: flex; gap: 0.3rem; flex-shrink: 0; align-items: center; }
+.task-edit-btn, .task-del-btn { background: none; border: none; color: var(--text-faint); cursor: pointer; font-size: 0.75rem; padding: 0.15rem; line-height: 1; }
+.task-edit-btn:hover { color: var(--accent); }
+.task-del-btn:hover { color: var(--red); }
+
+/* ══ TASKS TODAY WIDGET ═══════════════════════════════════ */
+.tasks-today-widget { margin-bottom: 1rem; }
+.tasks-today-header { display: flex; align-items: center; justify-content: space-between; padding: 0.4rem 0.5rem 0.3rem; border-bottom: 1px solid var(--border-dim); margin-bottom: 0.35rem; }
+.tasks-today-title { font-family: var(--font-display); font-size: 0.78rem; color: var(--text); }
+.tasks-today-count { font-size: 0.68rem; color: var(--text-faint); background: var(--bg-subtle); padding: 0.1rem 0.4rem; border-radius: 10px; }
+.tasks-today-list { display: flex; flex-direction: column; gap: 0.15rem; }
+.tasks-today-item { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.5rem; border-radius: var(--radius-sm); transition: var(--transition); }
+.tasks-today-item:hover { background: var(--bg-subtle); }
+.tasks-today-item.high { border-left: 2px solid var(--accent-warm); }
+.task-check-today { flex-shrink: 0; background: none; border: 1.5px solid var(--text-faint); border-radius: 50%; width: 1.1rem; height: 1.1rem; cursor: pointer; color: var(--accent); font-size: 0.6rem; display: flex; align-items: center; justify-content: center; transition: var(--transition); }
+.task-check-today:hover { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, transparent); }
+.tasks-today-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.4rem; }
+.tasks-today-name { font-size: 0.75rem; color: var(--text); }
+.tasks-today-time { font-size: 0.62rem; color: var(--text-faint); }
+.tasks-today-due { font-size: 0.62rem; color: var(--accent-warm); background: color-mix(in srgb, var(--accent-warm) 8%, transparent); padding: 0.08rem 0.35rem; border-radius: 8px; }
+.tasks-today-more { background: none; border: none; color: var(--accent); font-size: 0.68rem; cursor: pointer; padding: 0.25rem; text-align: center; font-family: var(--font-mono); }
+.tasks-today-more:hover { text-decoration: underline; }
+
+/* ══ CALENDAR TASK DOTS ════════════════════════════════════ */
+.cal-task-dot { display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--accent-warm); margin: 1px auto 0; }
+.cal-detail-section-label { font-family: var(--font-display); font-size: 0.72rem; color: var(--text-faint); padding: 0.5rem 0 0.25rem; margin-top: 0.25rem; border-top: 1px solid var(--border-dim); }
+.cal-task-row .cal-detail-name { font-size: 0.75rem; }
+.cal-task-row .cal-detail-done { text-decoration: line-through; color: var(--text-faint); }

@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=4" />
+  <link rel="stylesheet" href="css/style.css?v=5" />
 </head>
 <body>
 
@@ -112,6 +112,9 @@
     <nav class="sidebar-nav">
       <button class="nav-item active" data-view="today">
         <span class="nav-icon">◈</span> Today
+      </button>
+      <button class="nav-item" data-view="tasks">
+        <span class="nav-icon">☐</span> Tasks
       </button>
       <button class="nav-item" data-view="history">
         <span class="nav-icon">◑</span> History
@@ -251,10 +254,21 @@
       <div id="streak-risk-banner" class="streak-risk-banner hidden"></div>
       <div id="next-up-card" class="next-up-card"></div>
       <div id="stacks-today-widget" class="stacks-today-widget"></div>
+      <div id="tasks-today-widget" class="tasks-today-widget"></div>
       <div id="intention-area" class="intention-area"></div>
       <div id="time-capsule-area" class="time-capsule-area"></div>
       <div id="streak-eulogy-area" class="streak-eulogy-area"></div>
       <div id="habits-grid"></div>
+    </div>
+
+    <!-- TASKS -->
+    <div id="view-tasks" class="view">
+      <div class="tasks-toolbar">
+        <button class="tasks-filter-btn active" data-tasks-filter="all">All</button>
+        <button class="tasks-filter-btn" data-tasks-filter="pending">Pending</button>
+        <button class="tasks-filter-btn" data-tasks-filter="completed">Done</button>
+      </div>
+      <div id="tasks-list" class="tasks-list"></div>
     </div>
 
     <!-- HISTORY -->
@@ -814,6 +828,56 @@
   </div>
 </div>
 
+<!-- TASK MODAL -->
+<div id="modal-task" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modal-task-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-task-title">Add Task</h3>
+      <button class="modal-close" aria-label="Close" data-modal="modal-task">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-group">
+        <label>Title</label>
+        <input type="text" id="task-title-input" placeholder="e.g. Call doctor" maxlength="60" />
+      </div>
+      <div class="field-group">
+        <label>Description (optional)</label>
+        <textarea id="task-desc-input" rows="2" placeholder="Details…"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field-group flex-1">
+          <label>Due Date</label>
+          <input type="date" id="task-due-input" />
+        </div>
+        <div class="field-group flex-1">
+          <label>Time of Day</label>
+          <select id="task-time-select">
+            <option value="any">Anytime</option>
+            <option value="morning">Morning</option>
+            <option value="afternoon">Afternoon</option>
+            <option value="evening">Evening</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Priority</label>
+        <div class="type-toggle" id="task-priority-toggle">
+          <button class="type-btn" data-priority="-1">Low</button>
+          <button class="type-btn selected" data-priority="0">Normal</button>
+          <button class="type-btn" data-priority="1">High</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" data-modal="modal-task">Cancel</button>
+      <div class="modal-footer-right">
+        <button class="btn-link small" id="task-delete-btn" style="display:none;color:var(--red)">Delete</button>
+        <button class="btn-primary modal-save" id="save-task-btn">Save Task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DAY CLOSE MODAL -->
 <div id="modal-dayclose" class="modal-backdrop modal-dayclose-backdrop" role="dialog" aria-modal="true" aria-labelledby="dayclose-title">
   <div class="modal-dayclose">
@@ -865,15 +929,15 @@
   <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
   <div class="particle-dot"></div><div class="particle-dot"></div><div class="particle-dot"></div>
 </div>
-<script src="js/supabase.js?v=4"></script>
+<script src="js/supabase.js?v=5"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
-<script src="js/config.js?v=4"></script>
-<script src="js/db.js?v=4"></script>
-<script src="js/notifications.js?v=4"></script>
-<script src="js/app.js?v=4"></script>
+<script src="js/config.js?v=5"></script>
+<script src="js/db.js?v=5"></script>
+<script src="js/notifications.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js?v=4');
+  navigator.serviceWorker.register('/sw.js?v=5');
 }
 </script>
 </body>
