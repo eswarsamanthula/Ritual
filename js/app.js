@@ -290,7 +290,7 @@ async function init() {
         try { await showApp(session.user); } catch (e) { console.error('Init showApp failed:', e); showAuth(); }
       } else if (!session) {
         // Fallback: check localStorage flag for session recovery
-        const hasLoggedInBefore = localStorage.getItem('limitless_logged_in');
+        const hasLoggedInBefore = localStorage.getItem('ritual_logged_in');
         if (hasLoggedInBefore && !_showAppGuard) {
           try {
             const retry = await getSession();
@@ -308,7 +308,7 @@ async function init() {
             if (event === 'SIGNED_OUT') { _showAppGuard = false; }
             return;
           }
-          localStorage.setItem('limitless_logged_in', '1');
+          localStorage.setItem('ritual_logged_in', '1');
           if (!_showAppGuard) { await showApp(session.user); }
         } catch (e) { console.error('Auth change error:', e); }
       });
