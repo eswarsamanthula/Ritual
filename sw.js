@@ -1,7 +1,7 @@
 const CACHE = 'ritual-v5';
 const ASSETS = [
   '/', '/index.html?v=5',
-  '/js/supabase.js?v=5', '/js/app.js?v=5', '/js/db.js?v=5', '/js/config.js?v=5', '/js/notifications.js?v=5',
+  '/js/app.js?v=5', '/js/db.js?v=5', '/js/config.js?v=5', '/js/notifications.js?v=5',
   '/css/style.css?v=5',
   '/icons/icon-192.png?v=5', '/icons/icon-512.png?v=5',
   '/manifest.json?v=5',
